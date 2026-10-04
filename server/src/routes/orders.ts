@@ -238,6 +238,9 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
     }
     if (!order) throw new HttpError(500, 'Could not generate a unique order code');
 
+    // Snapshot delivery_type at order time. This lets the customer's
+    // order list know which lines are digital downloads even if the
+    // product is later deleted or its type changed.
     const itemRows = body.items.map((line) => {
       const p = byId.get(line.product_id)!;
       return {
@@ -247,6 +250,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
         product_price: p.price,
         quantity: line.quantity,
         pastel_color: p.pastel_color,
+        delivery_type: p.delivery_type,
       };
     });
     const { error: liErr } = await supabaseAdmin.from('order_items').insert(itemRows);
@@ -372,7 +376,6 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
       .single();
     if (error || !updated) throw new HttpError(500, error?.message ?? 'update failed');
 
-    // Fetch items so the notification leads with what was bought.
     const { data: itemRows } = await supabaseAdmin
       .from('order_items')
       .select('product_name, quantity')
