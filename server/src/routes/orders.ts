@@ -324,6 +324,10 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
         city: order.customer_city,
         total: order.total,
         payment_method: method,
+        items: body.items.map((line) => {
+          const p = byId.get(line.product_id)!;
+          return { name: p.name, quantity: line.quantity };
+        }),
       }).catch((err: unknown) => {
         console.error('[orders] admin notify failed:', err);
       });
@@ -368,12 +372,21 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
       .single();
     if (error || !updated) throw new HttpError(500, error?.message ?? 'update failed');
 
+    // Fetch items so the notification leads with what was bought.
+    const { data: itemRows } = await supabaseAdmin
+      .from('order_items')
+      .select('product_name, quantity')
+      .eq('order_id', updated.id);
+    const items =
+      (itemRows as Array<{ product_name: string; quantity: number }> | null) ?? [];
+
     notifyAdminsOfOrder({
       code: updated.order_code,
       customer: updated.customer_name,
       city: updated.customer_city,
       total: updated.total,
       payment_method: `${updated.payment_method} · proof submitted`,
+      items: items.map((i) => ({ name: i.product_name, quantity: i.quantity })),
     }).catch((err: unknown) => {
       console.error('[orders] proof notify failed:', err);
     });
