@@ -49,7 +49,8 @@ The short version of what you'll do:
 2. Create a Telegram bot
 3. Deploy the server to Render (free)
 4. Deploy the client to Vercel (free)
-5. Open your shop in Telegram
+5. Register the Mini App with BotFather — **use short name `store`**
+6. Open your shop in Telegram
 
 **Total time:** about 30 minutes.
 
