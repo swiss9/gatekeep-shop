@@ -171,7 +171,7 @@ export function Orders() {
                 </span>
               </div>
 
-              {/* Line items with real product names. */}
+              {/* Line items: real product image + name + count. */}
               <div
                 className="order-items"
                 style={{ display: 'flex', alignItems: 'center', gap: 10 }}
@@ -179,11 +179,27 @@ export function Orders() {
                 {first && (
                   <div
                     className="order-thumb"
-                    style={{ background: '#EEEFF1', flex: 'none' }}
+                    style={{
+                      background: '#EEEFF1',
+                      flex: 'none',
+                      overflow: 'hidden',
+                    }}
                   >
-                    <span className="initial">
-                      {first.product_name.charAt(0).toUpperCase()}
-                    </span>
+                    {first.product_image_url ? (
+                      <img
+                        src={first.product_image_url}
+                        alt=""
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                    ) : (
+                      <span className="initial">
+                        {first.product_name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                   </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
