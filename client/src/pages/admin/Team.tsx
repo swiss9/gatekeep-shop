@@ -6,8 +6,20 @@ import { useToast } from '../../context/ToastContext';
 
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME;
 
+/**
+ * Telegram Mini App direct-link format:
+ *   https://t.me/<bot>/<app_short_name>?startapp=<param>
+ *
+ * The `/store` segment is the app short name registered in BotFather
+ * via /newapp. Without it, `startapp=` never reaches the Mini App and
+ * invite redemption silently fails.
+ *
+ * If you change the app short name in BotFather, update it here too.
+ */
+const APP_SHORT_NAME = 'store';
+
 function inviteLink(token: string): string {
-  return `https://t.me/${BOT_USERNAME}?startapp=inv_${token}`;
+  return `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=inv_${token}`;
 }
 
 /**
