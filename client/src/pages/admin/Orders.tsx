@@ -223,7 +223,9 @@ export function Orders() {
           const canConfirm = o.status === 'Pending payment';
           const isBusy = busy === o.id;
 
-          const hasPhysicalItem = orderItems.some((it) => it.delivery_type === 'physical');
+          const hasPhysicalItem = orderItems.some(
+            (it) => it.delivery_type === 'physical',
+          );
           const hasAddressText =
             o.customer_address && o.customer_address !== '—' && hasPhysicalItem;
           const hasCityText =
@@ -234,33 +236,67 @@ export function Orders() {
             !!o.payment_tx_hash ||
             !!o.payment_proof_signed_url;
 
+          const primaryName =
+            orderItems.length > 0
+              ? orderItems.length > 1
+                ? `${orderItems[0]!.product_name} +${orderItems.length - 1} more`
+                : orderItems[0]!.product_name
+              : 'Order';
+
           return (
             <div className="order-card" key={o.id}>
               <div
                 className="order-top"
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', alignItems: 'flex-start' }}
                 onClick={() => setExpanded(isOpen ? null : o.id)}
               >
-                <span className="order-id">
-                  #{o.order_code}
-                  {o.payment_simulated && (
-                    <span
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 9.5,
-                        fontWeight: 800,
-                        letterSpacing: '0.08em',
-                        padding: '2px 6px',
-                        borderRadius: 999,
-                        background: 'var(--yellow)',
-                        color: '#78350F',
-                        verticalAlign: 'middle',
-                      }}
-                    >
-                      SIM
-                    </span>
-                  )}
-                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    minWidth: 0,
+                    flex: 1,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 13.5,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {primaryName}
+                    {o.payment_simulated && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          fontSize: 9.5,
+                          fontWeight: 800,
+                          letterSpacing: '0.08em',
+                          padding: '2px 6px',
+                          borderRadius: 999,
+                          background: 'var(--yellow)',
+                          color: '#78350F',
+                          verticalAlign: 'middle',
+                        }}
+                      >
+                        SIM
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 11,
+                      color: 'var(--muted)',
+                    }}
+                  >
+                    #{o.order_code}
+                  </span>
+                </div>
                 <span
                   className={`status ${
                     o.status === 'Delivered' || o.status === 'Paid'
@@ -276,8 +312,6 @@ export function Orders() {
                 </span>
               </div>
 
-              {/* Customer name is a link to their Telegram profile when
-                  their username is known. */}
               <div
                 className="muted"
                 style={{
@@ -287,6 +321,7 @@ export function Orders() {
                   alignItems: 'center',
                   gap: 6,
                   flexWrap: 'wrap',
+                  marginTop: 8,
                 }}
               >
                 {o.customer_username ? (
@@ -529,4 +564,4 @@ export function Orders() {
       )}
     </>
   );
-}
+                      }
