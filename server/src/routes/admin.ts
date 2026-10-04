@@ -7,6 +7,7 @@ import {
   notifyBuyerOfDelivery,
   notifyBuyerPaymentConfirmed,
 } from '../bot.js';
+import { proxyStorageUrl } from '../env.js';
 import type { Order, OrderItem, Profile, StoreSettings } from '../types.js';
 
 const STALE_PENDING_HOURS = 2;
@@ -86,7 +87,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       if (o.payment_proof_url) {
         const { data } = await supabaseAdmin.storage
           .from('receipts').createSignedUrl(o.payment_proof_url, 60 * 30);
-        signed = data?.signedUrl ?? null;
+        signed = proxyStorageUrl(data?.signedUrl ?? null);
       }
       ordersWithSigned.push({ ...o, payment_proof_signed_url: signed });
     }
@@ -115,7 +116,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
     await completePaidOrder(updated);
 
-    // Return the possibly-Delivered order.
     const { data: fresh } = await supabaseAdmin
       .from('orders').select('*').eq('id', id).single();
     return reply.send({ order: fresh as Order });
@@ -183,8 +183,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     if (transitioningToPaid) {
       await completePaidOrder(updated);
     } else if (transitioningToDelivered) {
-      // Digital files were already delivered at Paid time. Just send
-      // the shipment ping.
       if (updated.user_id) {
         const { data: profile } = await supabaseAdmin
           .from('profiles').select('telegram_id').eq('id', updated.user_id).maybeSingle();
