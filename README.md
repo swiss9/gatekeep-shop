@@ -122,8 +122,10 @@ For most issues, see the **Troubleshooting** section at the bottom of
 
 ## Support
 
+One email address, best effort, no SLA.
+
 **swiss9.dev@gmail.com**
-**t.me/swiss9dev**
+**https://t.me/swiss9dev**
 ---
 
 ## License
