@@ -10,22 +10,16 @@ const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME;
  * Telegram Mini App direct-link format:
  *   https://t.me/<bot>/<app_short_name>?startapp=<param>
  *
- * The `/store` segment is the app short name registered in BotFather
- * via /newapp. Without it, `startapp=` never reaches the Mini App and
- * invite redemption silently fails.
- *
- * If you change the app short name in BotFather, update it here too.
+ * The short name is set in BotFather /newapp. Defaults to 'store' but
+ * can be overridden via VITE_TELEGRAM_APP_SHORT_NAME if the buyer picked
+ * a different one.
  */
-const APP_SHORT_NAME = 'store';
+const APP_SHORT_NAME = import.meta.env.VITE_TELEGRAM_APP_SHORT_NAME ?? 'store';
 
 function inviteLink(token: string): string {
   return `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=inv_${token}`;
 }
 
-/**
- * Telegram's native share sheet. Opens the contact picker so the admin
- * can send the invite to any contact, group, or channel.
- */
 function shareLink(url: string, text: string): string {
   return `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 }
