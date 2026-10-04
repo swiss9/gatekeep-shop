@@ -124,25 +124,54 @@ async function handleUpdate(update: TelegramUpdate): Promise<void> {
 
 /**
  * Fetches line items for an order in a shape ready for display.
- * Returns an array like [{ name: 'Aria Headphones', quantity: 1 }, ...].
+ * Returns name, quantity, and delivery_type for each line.
  */
 async function loadOrderItemSummary(
   orderId: string,
-): Promise<Array<{ name: string; quantity: number }>> {
+): Promise<Array<{ name: string; quantity: number; delivery_type: string | null }>> {
   const { data } = await supabaseAdmin
     .from('order_items')
-    .select('product_name, quantity')
+    .select('product_name, quantity, delivery_type')
     .eq('order_id', orderId);
   const rows =
-    (data as Array<{ product_name: string; quantity: number }> | null) ?? [];
-  return rows.map((r) => ({ name: r.product_name, quantity: r.quantity }));
+    (data as Array<{
+      product_name: string;
+      quantity: number;
+      delivery_type: string | null;
+    }> | null) ?? [];
+  return rows.map((r) => ({
+    name: r.product_name,
+    quantity: r.quantity,
+    delivery_type: r.delivery_type,
+  }));
 }
 
-/** Formats items as "Name, Name ×2, Name ×3". */
 function formatItemsLine(items: Array<{ name: string; quantity: number }>): string {
   return items
     .map((i) => (i.quantity > 1 ? `${i.name} ×${i.quantity}` : i.name))
     .join(', ');
+}
+
+/**
+ * Builds a fulfilment sentence based on what's actually in the order.
+ * All-digital orders never mention shipping; all-physical orders never
+ * mention downloads; mixed orders describe both.
+ */
+function deliverySummary(items: Array<{ delivery_type: string | null }>): string {
+  const kinds = new Set(items.map((i) => i.delivery_type ?? 'none'));
+  const hasD = kinds.has('digital');
+  const hasP = kinds.has('physical');
+  const hasN = kinds.has('none');
+
+  if (hasD && hasP)
+    return 'Download links arrive in a moment. Physical items ship separately.';
+  if (hasD && hasN)
+    return "Download links arrive in a moment. We'll be in touch about the rest.";
+  if (hasP && hasN)
+    return "We'll notify you when your order ships, and be in touch about the rest.";
+  if (hasD) return 'Your download links arrive in a moment.';
+  if (hasP) return "We'll notify you when your order ships.";
+  return "We'll be in touch shortly.";
 }
 
 export async function finalizeDigitalDelivery(order: {
@@ -347,8 +376,8 @@ export async function createStarsInvoiceLink(params: {
 }
 
 /**
- * New-order notification for admins. Leads with the product names so the
- * admin knows what was bought at a glance. Order code trails on its own
+ * New-order notification for admins. Leads with product names so the
+ * admin knows at a glance what was bought. Order code trails on its own
  * line in monospace for reference.
  */
 export async function notifyAdminsOfOrder(order: {
@@ -419,14 +448,13 @@ export async function notifyBuyerOfDelivery(params: {
 
 /**
  * Buyer notification when payment is confirmed. Leads with what they
- * bought, so they don't have to look up the order code to know what
- * this message is about.
+ * bought. Fulfilment sentence is tailored to the actual item types in
+ * the order.
  */
 export async function notifyBuyerPaymentConfirmed(params: {
   telegramId: number;
   orderCode: string;
 }): Promise<void> {
-  // Fetch items for context.
   const { data: order } = await supabaseAdmin
     .from('orders')
     .select('id')
@@ -434,15 +462,19 @@ export async function notifyBuyerPaymentConfirmed(params: {
     .maybeSingle();
 
   let itemsLine = '';
+  let summary = "We'll be in touch shortly.";
   if (order) {
     const items = await loadOrderItemSummary(order.id);
-    if (items.length > 0) itemsLine = `${formatItemsLine(items)}\n\n`;
+    if (items.length > 0) {
+      itemsLine = `${formatItemsLine(items)}\n\n`;
+      summary = deliverySummary(items);
+    }
   }
 
   try {
     await sendMessage(
       params.telegramId,
-      `<b>Payment confirmed</b>\n\n${itemsLine}Order <code>#${params.orderCode}</code> is paid. Digital downloads arrive in a moment; physical items ship shortly.`,
+      `<b>Payment confirmed</b>\n\n${itemsLine}Order <code>#${params.orderCode}</code> is paid. ${summary}`,
       webAppButton('View order'),
     );
   } catch (err) {
