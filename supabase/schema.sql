@@ -256,20 +256,21 @@ create policy orders_update_admin on public.orders
 
 -- =====================================================================
 -- order_items
--- delivery_type is snapshotted at order time so a customer's order list
--- knows which lines are digital downloads vs shipped goods, even if the
--- product is later deleted or its delivery_type changes.
+-- Snapshots (delivery_type, product_image_url) are taken at order time
+-- so a customer's order list keeps working even if the product is later
+-- deleted or its type changed.
 -- =====================================================================
 create table public.order_items (
-  id            uuid primary key default gen_random_uuid(),
-  order_id      uuid not null references public.orders(id) on delete cascade,
-  product_id    uuid references public.products(id) on delete set null,
-  product_name  text not null,
-  product_price numeric not null,
-  quantity      int not null check (quantity > 0),
-  pastel_color  text,
-  delivery_type text
-    check (delivery_type in ('physical','digital','none'))
+  id                uuid primary key default gen_random_uuid(),
+  order_id          uuid not null references public.orders(id) on delete cascade,
+  product_id        uuid references public.products(id) on delete set null,
+  product_name      text not null,
+  product_price     numeric not null,
+  quantity          int not null check (quantity > 0),
+  pastel_color      text,
+  delivery_type     text
+    check (delivery_type in ('physical','digital','none')),
+  product_image_url text
 );
 
 create index idx_order_items_order on public.order_items(order_id);
