@@ -130,6 +130,7 @@ export type OrderItem = {
   quantity: number;
   pastel_color: string | null;
   delivery_type: DeliveryType | null;
+  product_image_url: string | null;
 };
 
 export type OrderDownload = {
