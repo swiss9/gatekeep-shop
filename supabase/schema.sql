@@ -11,8 +11,6 @@ create extension if not exists "pgcrypto";
 
 -- =====================================================================
 -- profiles
--- One row per Telegram user. id is our own UUID (not Supabase Auth's),
--- because we mint our own JWTs. telegram_id is the real identity.
 -- =====================================================================
 create table public.profiles (
   id           uuid primary key,
@@ -31,9 +29,6 @@ create index idx_profiles_telegram on public.profiles(telegram_id);
 
 alter table public.profiles enable row level security;
 
--- =====================================================================
--- is_admin() helper
--- =====================================================================
 create function public.is_admin(uid uuid)
 returns boolean
 language sql
@@ -57,7 +52,6 @@ create policy profiles_read_admin on public.profiles
 
 -- =====================================================================
 -- Role-change guard
--- Only the server (service_role) may change a role.
 -- =====================================================================
 create function public.prevent_role_change()
 returns trigger
@@ -106,13 +100,6 @@ create table public.store_settings (
   perk_1_text         text not null default 'Free shipping over $60',
   perk_2_text         text not null default '30-day easy returns',
   perk_3_text         text not null default 'Secure checkout',
-
-  -- Payment provider flags + config
-  payment_provider    text not null default 'manual'
-                        check (payment_provider in
-                          ('manual','cod','bank','crypto','stars','stripe')),
-  payment_url         text not null default '',
-  payment_ton_address text not null default '',
 
   -- Telegram Stars
   stars_enabled       boolean not null default false,
@@ -185,8 +172,6 @@ create table public.products (
                        check (pastel_color in ('blue','pink','yellow','mint')),
   stock              int not null default 0,
   active             boolean not null default true,
-  rating             numeric not null default 5.0,
-  review_count       int not null default 0,
   delivery_type      text not null default 'physical'
                        check (delivery_type in ('physical','digital','none')),
   digital_file_paths text[] not null default '{}',
