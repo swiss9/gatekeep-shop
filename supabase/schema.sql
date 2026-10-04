@@ -95,11 +95,20 @@ create table public.store_settings (
   banner_color        text not null default 'mint'
                         check (banner_color in ('mint','blue','pink','yellow','neutral')),
 
-  -- Product page perks
+  -- Product page perks (3 configurable bullets + icons)
   perks_enabled       boolean not null default true,
-  perk_1_text         text not null default 'Free shipping over $60',
+  perk_1_text         text not null default 'Fast delivery',
+  perk_1_icon         text not null default 'shipping'
+                        check (perk_1_icon in
+                          ('shipping','returns','secure','download','support','gift')),
   perk_2_text         text not null default '30-day easy returns',
+  perk_2_icon         text not null default 'returns'
+                        check (perk_2_icon in
+                          ('shipping','returns','secure','download','support','gift')),
   perk_3_text         text not null default 'Secure checkout',
+  perk_3_icon         text not null default 'secure'
+                        check (perk_3_icon in
+                          ('shipping','returns','secure','download','support','gift')),
 
   -- Telegram Stars
   stars_enabled       boolean not null default false,
@@ -158,8 +167,6 @@ create policy categories_write_admin on public.categories
 
 -- =====================================================================
 -- products
--- digital_file_paths is an array of storage paths inside the private
--- 'digital-goods' bucket. Products can ship multiple files.
 -- =====================================================================
 create table public.products (
   id                 uuid primary key default gen_random_uuid(),
