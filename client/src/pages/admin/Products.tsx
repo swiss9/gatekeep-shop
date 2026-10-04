@@ -17,7 +17,7 @@ const COLORS: PastelColor[] = ['blue', 'pink', 'yellow', 'mint'];
 const DELIVERY: { id: DeliveryType; label: string }[] = [
   { id: 'physical', label: 'Physical (ships)' },
   { id: 'digital', label: 'Digital (file download)' },
-  { id: 'none', label: 'No delivery (service / access)' },
+  { id: 'none', label: 'No service (service / access)' },
 ];
 
 type FormState = {
@@ -46,9 +46,25 @@ const emptyForm = (): FormState => ({
   digital_file_paths: [],
 });
 
-function basename(path: string): string {
-  const parts = path.split('/');
-  return parts[parts.length - 1] ?? path;
+/**
+ * Storage paths are stored as `<8-char-uuid>-<sanitized-filename>.<ext>`.
+ * Admins only need to see the original filename, not the uniqueness
+ * prefix. This strips it and returns the human-readable tail.
+ */
+function displayFilename(storedPath: string): string {
+  const tail = storedPath.split('/').pop() ?? storedPath;
+  // Drop the leading `xxxxxxxx-` if present.
+  return tail.replace(/^[0-9a-f]{8}-/i, '');
+}
+
+/**
+ * Font size adapts to filename length so long names still fit without
+ * truncating useful info. Falls back to ellipsis at the far end.
+ */
+function filenameFontSize(name: string): number {
+  if (name.length <= 24) return 13;
+  if (name.length <= 34) return 12;
+  return 11;
 }
 
 export function Products() {
@@ -330,45 +346,50 @@ export function Products() {
 
                 {form.digital_file_paths.length > 0 && (
                   <div style={{ marginBottom: 10 }}>
-                    {form.digital_file_paths.map((path, idx) => (
-                      <div
-                        key={idx}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 10,
-                          padding: '8px 12px',
-                          border: '1px solid var(--line)',
-                          borderRadius: 10,
-                          background: 'var(--chip)',
-                          marginBottom: 6,
-                        }}
-                      >
-                        <span
+                    {form.digital_file_paths.map((path, idx) => {
+                      const name = displayFilename(path);
+                      const fontSize = filenameFontSize(name);
+                      return (
+                        <div
+                          key={idx}
                           style={{
-                            flex: 1,
-                            minWidth: 0,
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: 11.5,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 12px',
+                            border: '1px solid var(--line)',
+                            borderRadius: 10,
+                            background: 'var(--chip)',
+                            marginBottom: 6,
                           }}
                         >
-                          {basename(path)}
-                        </span>
-                        <button
-                          type="button"
-                          className="x-btn"
-                          aria-label="Remove file"
-                          onClick={() => removeDigitalFile(idx)}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M6 6l12 12M18 6 6 18" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                          <span
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              fontFamily: "'JetBrains Mono', monospace",
+                              fontSize,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                            title={name}
+                          >
+                            {name}
+                          </span>
+                          <button
+                            type="button"
+                            className="x-btn"
+                            aria-label="Remove file"
+                            onClick={() => removeDigitalFile(idx)}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <path d="M6 6l12 12M18 6 6 18" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -525,4 +546,4 @@ export function Products() {
       )}
     </>
   );
-}
+                  }
