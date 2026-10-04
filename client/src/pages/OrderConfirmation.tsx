@@ -27,10 +27,6 @@ type Download = {
 const POLL_INTERVAL_MS = 5000;
 const POLL_MAX_MS = 15 * 60 * 1000;
 
-/**
- * The message the buyer sends the seller via the "Message seller" button.
- * Method-specific so the seller has context the moment the chat opens.
- */
 function telegramMessageFor(method: string, orderCode: string, total: string): string {
   switch (method) {
     case 'manual':
@@ -119,7 +115,8 @@ export function OrderConfirmation({ orderCode }: Props) {
     state.order.status !== 'Cancelled';
   const isCancelled = state.kind === 'ready' && state.order.status === 'Cancelled';
 
-  // Auto-load downloads once paid — no extra tap.
+  // Auto-load downloads once paid. Only shown if at least one digital
+  // line item exists — physical-only orders never see the panel.
   useEffect(() => {
     if (!isPaid || state.kind !== 'ready') return;
     if (downloads !== null) return;
@@ -242,9 +239,9 @@ export function OrderConfirmation({ orderCode }: Props) {
         ? 'Awaiting confirmation'
         : 'Awaiting payment';
 
-  const hasDownloads = downloads !== null && downloads.length > 0;
+  const hasDigital = downloads !== null && downloads.length > 0;
   const subline = isPaid
-    ? hasDownloads
+    ? hasDigital
       ? "Your downloads are below. We'll message you on Telegram if anything ships."
       : "We'll message you on Telegram when your order ships."
     : isCancelled
@@ -259,7 +256,6 @@ export function OrderConfirmation({ orderCode }: Props) {
     ? `https://t.me/${supportUsername}?text=${encodeURIComponent(telegramMessage)}`
     : null;
 
-  /** Small "Message seller" block reused under bank/crypto/cod panels. */
   const SellerContact = () => {
     if (!telegramDeepLink) return null;
     return (
@@ -322,48 +318,40 @@ export function OrderConfirmation({ orderCode }: Props) {
         <p className="msg" style={{ maxWidth: 320 }}>{subline}</p>
       </div>
 
-      {isPaid && (
+      {/* Downloads panel — only shown for orders that have digital items. */}
+      {isPaid && hasDigital && downloads && (
         <div className="panel" style={{ marginTop: 20 }}>
           <span className="section-title" style={{ display: 'block', marginBottom: 10 }}>
             Your downloads
           </span>
-          {loadingDownloads && downloads === null ? (
-            <p className="muted" style={{ fontSize: 13 }}>Fetching files…</p>
-          ) : downloads === null || downloads.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13 }}>
-              No downloadable items in this order.
-            </p>
-          ) : (
-            <>
-              {downloads.map((d, i) => (
-                <div
-                  key={i}
-                  style={{
-                    border: '1px solid var(--line)',
-                    borderRadius: 10,
-                    padding: '10px 12px',
-                    marginBottom: 8,
-                  }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-                    {d.product_name}
-                    {d.file_total > 1 ? ` · ${d.file_index + 1} of ${d.file_total}` : ''}
-                  </div>
-                  <a href={d.signed_url} target="_blank" rel="noreferrer" className="link-btn">
-                    Download (24h link)
-                  </a>
-                </div>
-              ))}
-              <button
-                type="button"
-                className="link-btn"
-                style={{ marginTop: 6 }}
-                onClick={reloadDownloads}
-              >
-                Refresh download links
-              </button>
-            </>
-          )}
+          {downloads.map((d, i) => (
+            <div
+              key={i}
+              style={{
+                border: '1px solid var(--line)',
+                borderRadius: 10,
+                padding: '10px 12px',
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                {d.product_name}
+                {d.file_total > 1 ? ` · ${d.file_index + 1} of ${d.file_total}` : ''}
+              </div>
+              <a href={d.signed_url} target="_blank" rel="noreferrer" className="link-btn">
+                Download (24h link)
+              </a>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="link-btn"
+            style={{ marginTop: 6 }}
+            onClick={reloadDownloads}
+            disabled={loadingDownloads}
+          >
+            {loadingDownloads ? 'Refreshing…' : 'Refresh download links'}
+          </button>
         </div>
       )}
 
