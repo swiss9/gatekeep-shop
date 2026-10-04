@@ -2,6 +2,7 @@ import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { supabaseAdmin } from '../supabase.js';
 import { HttpError, requireAuth, currentProfile } from '../middleware/auth.js';
 import { detectDocMime, detectImageMime } from '../magicBytes.js';
+import { proxyStorageUrl } from '../env.js';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
@@ -23,7 +24,6 @@ function ruleFor(bucket: Bucket): BucketRule {
     case 'receipts':
       return { imagesOnly: true, adminOnly: false, publicUrl: false, maxBytes: MAX_RECEIPT_BYTES };
     case 'digital-goods':
-      // No MIME allowlist — a merchant sells whatever they want.
       return { imagesOnly: false, adminOnly: true, publicUrl: false, maxBytes: MAX_FILE_BYTES };
   }
 }
@@ -62,8 +62,6 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
         }
         storedMime = detected;
       } else {
-        // If we recognize the content signature, use it. Otherwise trust
-        // the client's declared type.
         const detected = detectDocMime(bytes);
         storedMime = detected ?? (part.mimetype || 'application/octet-stream');
       }
@@ -92,9 +90,10 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
         throw new HttpError(500, 'Upload failed');
       }
 
-      const publicUrl = rule.publicUrl
+      const rawPublicUrl = rule.publicUrl
         ? supabaseAdmin.storage.from(bucket).getPublicUrl(path).data.publicUrl
         : null;
+      const publicUrl = proxyStorageUrl(rawPublicUrl);
 
       return reply.send({ path, public_url: publicUrl, mime: storedMime });
     },
