@@ -10,14 +10,6 @@ export type Profile = {
   created_at: string;
 };
 
-export type PaymentProvider =
-  | 'manual'
-  | 'cod'
-  | 'bank'
-  | 'crypto'
-  | 'stars'
-  | 'stripe';
-
 export type StoreSettings = {
   id: 1;
   store_name: string;
@@ -33,9 +25,6 @@ export type StoreSettings = {
   banner_cta: string;
   banner_cta_action: 'all' | 'category' | 'search';
   banner_color: 'mint' | 'blue' | 'pink' | 'yellow' | 'neutral';
-  payment_provider: PaymentProvider;
-  payment_url: string;
-  payment_ton_address: string;
   perks_enabled: boolean;
   perk_1_text: string;
   perk_2_text: string;
@@ -74,8 +63,6 @@ export type Product = {
   pastel_color: PastelColor;
   stock: number;
   active: boolean;
-  rating: number;
-  review_count: number;
   delivery_type: DeliveryType;
   digital_file_paths: string[];
   created_at: string;
