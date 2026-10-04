@@ -278,26 +278,46 @@ Now we go back and replace the placeholders we left in Render.
 
 ## Step 5 — Register the Mini App with Telegram
 
-This tells Telegram that your bot has a Mini App.
+This step is what makes invite links and direct links work. Don't skip it.
+
+### 5a. Register the app
 
 1. Open Telegram and go to **@BotFather**
 2. Send `/newapp`
 3. Select your bot from the list
-4. Fill in:
-   - **Title:** anything (e.g. `My Shop`)
-   - **Description:** anything
-   - **Photo:** upload any image (recommended: 640×360)
-   - **Web App URL:** your Vercel URL from Step 4b
-   - **Short name:** a short identifier like `myshop`
-5. BotFather confirms the app is registered.
+4. BotFather asks you to fill in:
 
-### 5b. Set the menu button (optional but recommended)
+   | Field | What to enter |
+   |---|---|
+   | **Title** | anything (e.g. `My Shop`) |
+   | **Description** | anything short |
+   | **Photo** | upload any image — recommended 640×360 |
+   | **Web App URL** | your Vercel URL from Step 4b |
+   | **Short name** | **type exactly: `store`** |
 
-1. Still in BotFather, send `/mybots` → your bot → **Bot Settings** →
-   **Menu Button**
+5. BotFather confirms and gives you your Mini App link, e.g.
+   `t.me/YourBotUsername/store`
+
+⚠️ **The short name must be `store`.** The code in this template
+   builds invite links as `t.me/<bot>/store?startapp=inv_...`. If you
+   choose a different short name, invite links will break.
+
+   *If you really want a different short name:* after finishing `/newapp`,
+   open `client/src/pages/admin/Team.tsx` and change the line:
+
+   ```ts
+   const APP_SHORT_NAME = 'store';
+   ```
+
+   Set it to whatever short name you chose in BotFather, then redeploy
+   the client.
+
+### 5b. Set the menu button
+
+1. Still in BotFather, send `/mybots` → your bot → **Bot Settings** → **Menu Button**
 2. Set the URL to your Vercel URL
 
-Now the bot has a button that opens your shop.
+This adds a button in the chat that opens your shop with one tap.
 
 ---
 
@@ -511,6 +531,22 @@ the SQL Editor.
 
 Check Render's logs. It'll tell you exactly which variable is missing
 or malformed. Compare against Step 3b.
+
+### Invite link doesn't promote the person
+
+Two things must be true:
+
+1. **You've completed `/newapp` in BotFather.** Without it, Telegram
+   never passes the `startapp=` parameter to your Mini App, and the
+   server has nothing to redeem. See Step 5.
+
+2. **The app short name in BotFather matches the code.** The default
+   is `store`. If you chose a different short name in BotFather, open
+   `client/src/pages/admin/Team.tsx` and update the `APP_SHORT_NAME`
+   constant to match, then redeploy.
+
+Also: links are single-use and expire 48 hours after creation. If a
+link doesn't work, revoke it and create a fresh one.
 
 ### I want to start over
 
