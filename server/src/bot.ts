@@ -1,5 +1,5 @@
 import { supabaseAdmin } from './supabase.js';
-import { env } from './env.js';
+import { env, proxyStorageUrl } from './env.js';
 import type { Order, OrderItem, Product } from './types.js';
 
 const BOT_API = `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}`;
@@ -122,14 +122,6 @@ async function handleUpdate(update: TelegramUpdate): Promise<void> {
   }
 }
 
-/**
- * Post-Paid-transition work. Signs every digital file path and sends
- * one Telegram message per digital product, then reports whether the
- * order has anything that needs shipping.
- *
- * Idempotent: safe to call twice; the buyer just gets fresh signed
- * links.
- */
 export async function finalizeDigitalDelivery(order: {
   id: string;
   order_code: string;
@@ -190,10 +182,11 @@ export async function finalizeDigitalDelivery(order: {
           const { data } = await supabaseAdmin.storage
             .from('digital-goods')
             .createSignedUrl(path, 60 * 60 * 24);
-          if (!data?.signedUrl) continue;
+          const signed = proxyStorageUrl(data?.signedUrl ?? null);
+          if (!signed) continue;
           files.push({
             label: paths.length === 1 ? 'Download' : `Download ${i + 1} / ${paths.length}`,
-            url: data.signedUrl,
+            url: signed,
           });
         }
 
@@ -330,12 +323,6 @@ export async function createStarsInvoiceLink(params: {
   return json.result;
 }
 
-/**
- * New-order notification for admins. Includes the payment method so the
- * admin knows at a glance what to do. No timestamp — the notification
- * arrives seconds after the order, and Telegram shows its own sent-time
- * in the recipient's device timezone.
- */
 export async function notifyAdminsOfOrder(order: {
   code: string;
   customer: string;
@@ -368,7 +355,6 @@ export async function notifyAdminsOfOrder(order: {
 }
 
 function prettifyMethod(method: string): string {
-  // " · proof submitted" suffix is used on the proof-notification variant.
   if (method.endsWith(' · proof submitted')) {
     const base = method.slice(0, -' · proof submitted'.length);
     return `${prettifyMethod(base)} · proof submitted`;
@@ -487,5 +473,4 @@ export async function broadcastNewProduct(product: {
   console.log(`[bot] broadcast sent to ${sent}/${profiles.length} buyers`);
 }
 
-// Type-only import reference so the Order import survives tree shaking.
 void (undefined as unknown as Order);
