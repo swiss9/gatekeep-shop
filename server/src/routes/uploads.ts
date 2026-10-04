@@ -28,6 +28,30 @@ function ruleFor(bucket: Bucket): BucketRule {
   }
 }
 
+/**
+ * Strips a filename down to something safe for a storage path while
+ * keeping the recognizable base name and extension. Admins browsing the
+ * bucket see "c32e41ce-Aria-Wireless-Manual.pdf" instead of a wall of
+ * hex, so they can tell what they uploaded.
+ */
+function sanitizeFilename(name: string): string {
+  const dot = name.lastIndexOf('.');
+  const base = dot > 0 ? name.slice(0, dot) : name;
+  const ext = dot > 0 ? name.slice(dot + 1) : '';
+
+  const cleanBase =
+    base
+      .replace(/[^a-zA-Z0-9_\- ]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^[-_]+|[-_]+$/g, '')
+      .slice(0, 60) || 'file';
+
+  const cleanExt = ext.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+
+  return cleanExt ? `${cleanBase}.${cleanExt}` : cleanBase;
+}
+
 export const uploadRoutes: FastifyPluginAsync = async (app) => {
   app.post(
     '/api/uploads/:bucket',
@@ -66,10 +90,10 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
         storedMime = detected ?? (part.mimetype || 'application/octet-stream');
       }
 
-      const ext = (part.filename?.split('.').pop() ?? 'bin')
-        .toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
       let path: string;
       if (bucket === 'receipts') {
+        const ext = (part.filename?.split('.').pop() ?? 'jpg')
+          .toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
         const fields = part.fields as Record<string, { value?: unknown } | undefined> | undefined;
         const orderIdField = fields?.order_id;
         const orderId = orderIdField && typeof orderIdField === 'object' && 'value' in orderIdField
@@ -79,7 +103,11 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
         }
         path = `${me.id}/${orderId}.${ext}`;
       } else {
-        path = `${crypto.randomUUID()}.${ext}`;
+        // Short uuid prefix for uniqueness, sanitized original filename
+        // for readability.
+        const short = crypto.randomUUID().slice(0, 8);
+        const sanitized = sanitizeFilename(part.filename ?? 'file');
+        path = `${short}-${sanitized}`;
       }
 
       const { error: uploadErr } = await supabaseAdmin.storage
