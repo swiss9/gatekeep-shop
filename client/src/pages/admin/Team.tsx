@@ -10,6 +10,14 @@ function inviteLink(token: string): string {
   return `https://t.me/${BOT_USERNAME}?startapp=inv_${token}`;
 }
 
+/**
+ * Telegram's native share sheet. Opens the contact picker so the admin
+ * can send the invite to any contact, group, or channel.
+ */
+function shareLink(url: string, text: string): string {
+  return `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+}
+
 export function Team() {
   const auth = useAuth();
   const toast = useToast();
@@ -160,7 +168,12 @@ export function Team() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button type="button" className="dashed-btn" style={{ marginTop: 0 }} onClick={() => createInvite('admin')}>
+        <button
+          type="button"
+          className="dashed-btn"
+          style={{ marginTop: 0 }}
+          onClick={() => createInvite('admin')}
+        >
           Invite admin
         </button>
         {isSuper && (
@@ -183,8 +196,16 @@ export function Team() {
           <div className="inv-list">
             {pendingInvites.map((inv) => {
               const url = inviteLink(inv.token);
+              const shareUrl = shareLink(
+                url,
+                `You've been invited as ${inv.grants_role} to help manage the shop. Tap to join.`,
+              );
               return (
-                <div className="inv-row" key={inv.id} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div
+                  className="inv-row"
+                  key={inv.id}
+                  style={{ flexDirection: 'column', alignItems: 'stretch' }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className={`role-badge ${inv.grants_role}`}>{inv.grants_role}</span>
                     <span className="muted" style={{ fontSize: 11 }}>
@@ -203,7 +224,11 @@ export function Team() {
                     >
                       Copy
                     </button>
-                    <button type="button" className="link-btn" onClick={() => openTelegramLink(url)}>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={() => openTelegramLink(shareUrl)}
+                    >
                       Share
                     </button>
                     <button type="button" className="link-btn" onClick={() => revoke(inv)}>
@@ -222,8 +247,9 @@ export function Team() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Transfer ownership</h3>
             <p>
-              You will be demoted to admin and <strong>{transferTarget.first_name ?? 'they'}</strong> will become
-              superadmin. Type their first name to confirm.
+              You will be demoted to admin and{' '}
+              <strong>{transferTarget.first_name ?? 'they'}</strong> will become superadmin.
+              Type their first name to confirm.
             </p>
             <div className="field">
               <input
