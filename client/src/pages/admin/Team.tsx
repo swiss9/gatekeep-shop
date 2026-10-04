@@ -5,15 +5,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME;
-
-/**
- * Telegram Mini App direct-link format:
- *   https://t.me/<bot>/<app_short_name>?startapp=<param>
- *
- * The short name is set in BotFather /newapp. Defaults to 'store' but
- * can be overridden via VITE_TELEGRAM_APP_SHORT_NAME if the buyer picked
- * a different one.
- */
 const APP_SHORT_NAME = import.meta.env.VITE_TELEGRAM_APP_SHORT_NAME ?? 'store';
 
 function inviteLink(token: string): string {
