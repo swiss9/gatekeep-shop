@@ -11,16 +11,16 @@ const EnvSchema = z.object({
 
   TELEGRAM_BOT_TOKEN: z.string().regex(/^\d+:[A-Za-z0-9_-]+$/, 'Invalid Telegram bot token'),
   ADMIN_TELEGRAM_ID: z.coerce.number().int().positive(),
-  // Optional. If unset, Stripe redirects go straight to MINI_APP_URL
-  // (buyer lands in a browser tab instead of the Mini App).
   TELEGRAM_BOT_USERNAME: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
 
   CLIENT_ORIGIN: z.string().url(),
   MINI_APP_URL: z.string().url(),
 
-  // Stripe. Both required if the store enables the Stripe provider;
-  // validated lazily at use time rather than at boot so a store that
-  // doesn't use Stripe can start without them.
+  // Public URL of this server. Used to rewrite Supabase Storage URLs so
+  // the browser loads them from us (reachable) instead of from
+  // supabase.co (potentially ISP-blocked).
+  PUBLIC_SERVER_URL: z.string().url(),
+
   STRIPE_SECRET_KEY: z.string().startsWith('sk_').optional(),
   STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_').optional(),
 });
@@ -40,3 +40,13 @@ function load(): Env {
 }
 
 export const env: Env = load();
+
+/**
+ * Rewrite a Supabase Storage URL so it routes through this server's
+ * /sb/* proxy. Safe to call with null/undefined — returns null.
+ */
+export function proxyStorageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const base = env.SUPABASE_URL.replace(/\/+$/, '');
+  return url.replace(base, `${env.PUBLIC_SERVER_URL.replace(/\/+$/, '')}/sb`);
+}
