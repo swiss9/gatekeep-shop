@@ -29,11 +29,12 @@ You get:
 
 ## What's not included
 
-- **No payment processor account.** You connect Stripe or Telegram Stars
-  yourself — no fees go to us.
+- **No payment processor account.** You connect Stripe or Telegram
+  Stars yourself — no fees go to us.
 - **No hosting.** You deploy to your own free accounts (Render, Vercel,
   Supabase).
-- **No customer support for your shop.** Your buyers contact you, not us.
+- **No customer support for your shop.** Your buyers contact you, not
+  us.
 
 ---
 
@@ -49,7 +50,7 @@ The short version of what you'll do:
 2. Create a Telegram bot
 3. Deploy the server to Render (free)
 4. Deploy the client to Vercel (free)
-5. Register the Mini App with BotFather — **use short name `store`**
+5. Register your Mini App with BotFather
 6. Open your shop in Telegram
 
 **Total time:** about 30 minutes.
@@ -116,6 +117,8 @@ For most issues, see the **Troubleshooting** section at the bottom of
 - Admin tab missing
 - Images or downloads not loading (regional blocking)
 - Stripe webhook failures
+- Stripe redirecting to a browser instead of the Mini App
+- Invite links not promoting the person
 - Cart or checkout issues
 
 ---
@@ -125,7 +128,7 @@ For most issues, see the **Troubleshooting** section at the bottom of
 One email address, best effort, no SLA.
 
 **swiss9.dev@gmail.com**
-**https://t.me/swiss9dev**
+
 ---
 
 ## License
