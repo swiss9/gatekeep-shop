@@ -122,6 +122,29 @@ async function handleUpdate(update: TelegramUpdate): Promise<void> {
   }
 }
 
+/**
+ * Fetches line items for an order in a shape ready for display.
+ * Returns an array like [{ name: 'Aria Headphones', quantity: 1 }, ...].
+ */
+async function loadOrderItemSummary(
+  orderId: string,
+): Promise<Array<{ name: string; quantity: number }>> {
+  const { data } = await supabaseAdmin
+    .from('order_items')
+    .select('product_name, quantity')
+    .eq('order_id', orderId);
+  const rows =
+    (data as Array<{ product_name: string; quantity: number }> | null) ?? [];
+  return rows.map((r) => ({ name: r.product_name, quantity: r.quantity }));
+}
+
+/** Formats items as "Name, Name ×2, Name ×3". */
+function formatItemsLine(items: Array<{ name: string; quantity: number }>): string {
+  return items
+    .map((i) => (i.quantity > 1 ? `${i.name} ×${i.quantity}` : i.name))
+    .join(', ');
+}
+
 export async function finalizeDigitalDelivery(order: {
   id: string;
   order_code: string;
@@ -323,12 +346,18 @@ export async function createStarsInvoiceLink(params: {
   return json.result;
 }
 
+/**
+ * New-order notification for admins. Leads with the product names so the
+ * admin knows what was bought at a glance. Order code trails on its own
+ * line in monospace for reference.
+ */
 export async function notifyAdminsOfOrder(order: {
   code: string;
   customer: string;
   city: string;
   total: number;
   payment_method: string;
+  items: Array<{ name: string; quantity: number }>;
 }): Promise<void> {
   const { data: admins } = await supabaseAdmin
     .from('profiles')
@@ -338,12 +367,14 @@ export async function notifyAdminsOfOrder(order: {
 
   const { currency_symbol } = await loadSettings();
   const methodLabel = prettifyMethod(order.payment_method);
+  const itemsLine = formatItemsLine(order.items);
 
   const text =
     `<b>New order</b>\n\n` +
-    `#${order.code}\n` +
+    `${itemsLine}\n` +
     `${order.customer} · ${order.city}\n` +
-    `${currency_symbol}${order.total} · ${methodLabel}`;
+    `${currency_symbol}${order.total} · ${methodLabel}\n` +
+    `<code>#${order.code}</code>`;
 
   for (const a of admins) {
     try {
@@ -386,14 +417,32 @@ export async function notifyBuyerOfDelivery(params: {
   }
 }
 
+/**
+ * Buyer notification when payment is confirmed. Leads with what they
+ * bought, so they don't have to look up the order code to know what
+ * this message is about.
+ */
 export async function notifyBuyerPaymentConfirmed(params: {
   telegramId: number;
   orderCode: string;
 }): Promise<void> {
+  // Fetch items for context.
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('id')
+    .eq('order_code', params.orderCode)
+    .maybeSingle();
+
+  let itemsLine = '';
+  if (order) {
+    const items = await loadOrderItemSummary(order.id);
+    if (items.length > 0) itemsLine = `${formatItemsLine(items)}\n\n`;
+  }
+
   try {
     await sendMessage(
       params.telegramId,
-      `<b>Payment confirmed</b>\n\nOrder #${params.orderCode} is paid. Digital downloads arrive in a moment; physical items ship shortly.`,
+      `<b>Payment confirmed</b>\n\n${itemsLine}Order <code>#${params.orderCode}</code> is paid. Digital downloads arrive in a moment; physical items ship shortly.`,
       webAppButton('View order'),
     );
   } catch (err) {
