@@ -407,39 +407,20 @@ Some ISPs — notably in **India, Myanmar, UAE, and parts of the Middle
 East** — block `*.supabase.co` at the DNS level. If your customers are
 in those regions, images and downloads won't load for them.
 
-Gatekeep Shop ships with a built-in proxy that solves this. The proxy
-lives on your Render server (which isn't blocked) and forwards storage
-requests through to Supabase.
+**This template already handles it.** When you deploy, your own Render
+server acts as a proxy: image and download requests go through your
+Render URL instead of Supabase, so they reach your customers even on
+blocked networks.
 
-**To enable it:**
+**You don't need to do anything extra.** If you followed Step 3b and
+set `PUBLIC_SERVER_URL` to your Render URL, this is already active.
 
-If you followed Step 3b, it's already on — `PUBLIC_SERVER_URL` is set
-and the server registers the `/sb/*` route automatically.
+- Every image you upload goes through the proxy automatically.
+- Every digital download link goes through the proxy automatically.
+- Nothing routes through the template author or any third party. It's
+  all your own infrastructure.
 
-**One extra step if you already added products:**
-
-Any products added before you enabled the proxy might have image URLs
-pointing directly at Supabase. Run this in your Supabase SQL Editor to
-rewrite them:
-
-```sql
-update public.products
-set image_url = replace(
-  image_url,
-  'https://YOUR-PROJECT-REF.supabase.co',
-  'https://YOUR-RENDER-URL.onrender.com/sb'
-)
-where image_url like 'https://YOUR-PROJECT-REF.supabase.co%';
-```
-
-Replace:
-- `YOUR-PROJECT-REF` — the subdomain from your Supabase Project URL
-  (e.g. `xyzabcdefghijklm`)
-- `YOUR-RENDER-URL` — your Render URL without `https://` (e.g.
-  `gatekeep-shop-server.onrender.com`)
-
-New products uploaded after this are automatically proxied — no action
-needed.
+There is no further setup.
 
 ---
 
