@@ -4,6 +4,7 @@ import { HttpError, requireAuth, currentProfile } from '../middleware/auth.js';
 import { OrderCreateSchema, ProofSubmitSchema } from '../schemas.js';
 import { notifyAdminsOfOrder, createStarsInvoiceLink } from '../bot.js';
 import { createStripeCheckoutSession } from '../stripe.js';
+import { proxyStorageUrl } from '../env.js';
 import type { Order, OrderItem, Product, StoreSettings } from '../types.js';
 
 const RATE_LIMIT_PER_HOUR = 5;
@@ -124,12 +125,13 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
         const { data, error } = await supabaseAdmin.storage
           .from('digital-goods')
           .createSignedUrl(filePath, 60 * 60 * 24);
-        if (error || !data?.signedUrl) continue;
+        const signed = proxyStorageUrl(data?.signedUrl ?? null);
+        if (error || !signed) continue;
         downloads.push({
           product_name: p.name,
           file_index: i,
           file_total: total,
-          signed_url: data.signedUrl,
+          signed_url: signed,
         });
       }
     }
