@@ -565,6 +565,7 @@ Nothing is permanent except your data.
 ### Something else
 
 Email **swiss9.dev@gmail.com** with:
+Telegram **https://t.me/swiss9dev**
 
 - What you were trying to do
 - What happened (screenshot if possible)
