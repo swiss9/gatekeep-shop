@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { api, formatMoney, type ProductWithCategory, type StoreSettings } from '../lib/api';
+import {
+  api,
+  formatMoney,
+  type PerkIcon,
+  type ProductWithCategory,
+  type StoreSettings,
+} from '../lib/api';
 import { haptic } from '../lib/telegram';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
@@ -14,7 +20,7 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; product: ProductWithCategory; store: StoreSettings };
 
-const PERK_ICON = {
+const PERK_ICONS: Record<PerkIcon, JSX.Element> = {
   shipping: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" />
@@ -34,7 +40,29 @@ const PERK_ICON = {
       <path d="m9 11.5 2.2 2.2L15.5 9" />
     </svg>
   ),
-} as const;
+  download: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 4v12m0 0-4-4m4 4 4-4" />
+      <path d="M4 18h16" />
+    </svg>
+  ),
+  support: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12a8 8 0 1 1 16 0" />
+      <rect x="3" y="12" width="4" height="7" rx="1.5" />
+      <rect x="17" y="12" width="4" height="7" rx="1.5" />
+      <path d="M17 19v1a3 3 0 0 1-3 3h-2" />
+    </svg>
+  ),
+  gift: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="9" width="18" height="12" rx="1.5" />
+      <path d="M3 13h18" />
+      <path d="M12 9v12" />
+      <path d="M12 9c-1.5 0-4-1-4-3.5C8 4 9.5 3 11 3c1.5 0 2 1.5 2 3V9h1V6c0-1.5.5-3 2-3 1.5 0 3 1 3 2.5C19 8 16.5 9 15 9" />
+    </svg>
+  ),
+};
 
 export function ProductDetail({ id }: Props) {
   const { back, navigate } = useRouter();
@@ -91,10 +119,20 @@ export function ProductDetail({ id }: Props) {
   const saved = wishlist.has(product.id);
 
   const activePerks = [
-    { icon: PERK_ICON.shipping, text: store.perk_1_text },
-    { icon: PERK_ICON.returns, text: store.perk_2_text },
-    { icon: PERK_ICON.secure, text: store.perk_3_text },
+    { icon: store.perk_1_icon, text: store.perk_1_text },
+    { icon: store.perk_2_icon, text: store.perk_2_text },
+    { icon: store.perk_3_icon, text: store.perk_3_text },
   ].filter((p) => p.text.trim().length > 0);
+
+  const stockLabel = !inStock
+    ? 'Out of stock'
+    : isDigital
+      ? 'Instant download after purchase'
+      : isNone
+        ? 'Available for order'
+        : product.stock <= 10
+          ? `Only ${product.stock} left in stock`
+          : 'In stock';
 
   return (
     <section className="screen cta-screen active">
@@ -133,17 +171,7 @@ export function ProductDetail({ id }: Props) {
 
       <div className="stock-line">
         <span className={`dot${inStock ? '' : ' out'}`} />
-        <span className="muted">
-          {!inStock
-            ? 'Out of stock'
-            : isDigital
-              ? 'Instant download after purchase'
-              : isNone
-                ? 'Available for order'
-                : product.stock <= 10
-                  ? `Only ${product.stock} left in stock`
-                  : 'In stock · ships within 24h'}
-        </span>
+        <span className="muted">{stockLabel}</span>
       </div>
 
       {!isNone && !isDigital && (
@@ -153,11 +181,11 @@ export function ProductDetail({ id }: Props) {
         </div>
       )}
 
-      {store.perks_enabled && !isDigital && activePerks.length > 0 && (
+      {store.perks_enabled && activePerks.length > 0 && (
         <div className="perks">
           {activePerks.map((p, i) => (
             <div className="perk" key={i}>
-              {p.icon}
+              {PERK_ICONS[p.icon]}
               {p.text}
             </div>
           ))}
@@ -185,4 +213,4 @@ export function ProductDetail({ id }: Props) {
       </div>
     </section>
   );
-}
+  }
