@@ -256,6 +256,9 @@ create policy orders_update_admin on public.orders
 
 -- =====================================================================
 -- order_items
+-- delivery_type is snapshotted at order time so a customer's order list
+-- knows which lines are digital downloads vs shipped goods, even if the
+-- product is later deleted or its delivery_type changes.
 -- =====================================================================
 create table public.order_items (
   id            uuid primary key default gen_random_uuid(),
@@ -264,7 +267,9 @@ create table public.order_items (
   product_name  text not null,
   product_price numeric not null,
   quantity      int not null check (quantity > 0),
-  pastel_color  text
+  pastel_color  text,
+  delivery_type text
+    check (delivery_type in ('physical','digital','none'))
 );
 
 create index idx_order_items_order on public.order_items(order_id);
