@@ -26,7 +26,12 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; orders: Order[]; items: OrderItem[]; store: StoreSettings };
 
-type Download = { product_name: string; file_index: number; file_total: number; signed_url: string };
+type Download = {
+  product_name: string;
+  file_index: number;
+  file_total: number;
+  signed_url: string;
+};
 
 function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -55,16 +60,24 @@ export function Orders() {
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setState({ kind: 'error', message: err instanceof Error ? err.message : 'Failed to load.' });
+        setState({
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Failed to load.',
+        });
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(() => {
     if (state.kind !== 'ready') return [];
     if (filter === 'Active')
-      return state.orders.filter((o) => o.status !== 'Delivered' && o.status !== 'Cancelled');
-    if (filter === 'Delivered') return state.orders.filter((o) => o.status === 'Delivered');
+      return state.orders.filter(
+        (o) => o.status !== 'Delivered' && o.status !== 'Cancelled',
+      );
+    if (filter === 'Delivered')
+      return state.orders.filter((o) => o.status === 'Delivered');
     return state.orders;
   }, [state, filter]);
 
@@ -109,7 +122,9 @@ export function Orders() {
     <section className="screen active">
       <div className="page-head">
         <h1 className="page-title h-display">Orders</h1>
-        <p className="page-sub">{state.orders.length} orders · {activeCount} active</p>
+        <p className="page-sub">
+          {state.orders.length} orders · {activeCount} active
+        </p>
       </div>
 
       <div className="pills" style={{ paddingTop: 10 }}>
@@ -132,9 +147,19 @@ export function Orders() {
       ) : (
         filtered.map((o) => {
           const items = itemsByOrder.get(o.id) ?? [];
-          const count = items.reduce((n, i) => n + i.quantity, 0);
-          const isAwaitingConfirm = o.status === 'Pending payment' && !!o.payment_proof_submitted_at;
-          const canDownload = o.status !== 'Pending payment' && o.status !== 'Cancelled';
+          const first = items[0];
+          const totalQty = items.reduce((n, i) => n + i.quantity, 0);
+          const isAwaitingConfirm =
+            o.status === 'Pending payment' && !!o.payment_proof_submitted_at;
+
+          // Downloads button only appears when the order has at least one
+          // digital line item AND payment is confirmed. Physical-only
+          // orders never see it.
+          const hasDigital = items.some((i) => i.delivery_type === 'digital');
+          const paid =
+            o.status !== 'Pending payment' && o.status !== 'Cancelled';
+          const canDownload = hasDigital && paid;
+
           const shown = downloadsFor === o.id ? downloads : null;
 
           return (
@@ -145,14 +170,44 @@ export function Orders() {
                   {isAwaitingConfirm ? 'Awaiting confirmation' : o.status}
                 </span>
               </div>
-              <div className="order-items">
-                {items.slice(0, 4).map((it) => (
-                  <div className="order-thumb" key={it.id} style={{ background: '#EEEFF1' }}>
-                    <span className="initial">{it.product_name.charAt(0).toUpperCase()}</span>
+
+              {/* Line items with real product names. */}
+              <div
+                className="order-items"
+                style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+              >
+                {first && (
+                  <div
+                    className="order-thumb"
+                    style={{ background: '#EEEFF1', flex: 'none' }}
+                  >
+                    <span className="initial">
+                      {first.product_name.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                ))}
-                <span className="order-more">{count} {count === 1 ? 'item' : 'items'}</span>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      fontSize: 13,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {first
+                      ? items.length > 1
+                        ? `${first.product_name} +${items.length - 1} more`
+                        : first.product_name
+                      : 'Order'}
+                  </div>
+                  <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                    {totalQty} {totalQty === 1 ? 'item' : 'items'}
+                  </div>
+                </div>
               </div>
+
               <div className="order-bottom">
                 <span className="order-date" style={{ fontSize: 11.5 }}>
                   {formatDateTime(o.created_at)}
@@ -184,11 +239,24 @@ export function Orders() {
                         marginTop: 8,
                       }}
                     >
-                      <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                      <div
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 13,
+                          marginBottom: 6,
+                        }}
+                      >
                         {d.product_name}
-                        {d.file_total > 1 ? ` · ${d.file_index + 1} of ${d.file_total}` : ''}
+                        {d.file_total > 1
+                          ? ` · ${d.file_index + 1} of ${d.file_total}`
+                          : ''}
                       </div>
-                      <a href={d.signed_url} target="_blank" rel="noreferrer" className="link-btn">
+                      <a
+                        href={d.signed_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="link-btn"
+                      >
                         Download (24h link)
                       </a>
                     </div>
