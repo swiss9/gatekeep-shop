@@ -68,6 +68,10 @@ export const CategoryCreateSchema = z.object({
 });
 export const CategoryUpdateSchema = CategoryCreateSchema.partial();
 
+export const PERK_ICONS = [
+  'shipping', 'returns', 'secure', 'download', 'support', 'gift',
+] as const;
+
 export const SettingsUpdateSchema = z
   .object({
     store_name: z.string().trim().min(1).max(80).optional(),
@@ -85,8 +89,11 @@ export const SettingsUpdateSchema = z
     banner_color: z.enum(['mint', 'blue', 'pink', 'yellow', 'neutral']).optional(),
     perks_enabled: z.boolean().optional(),
     perk_1_text: z.string().trim().max(80).optional(),
+    perk_1_icon: z.enum(PERK_ICONS).optional(),
     perk_2_text: z.string().trim().max(80).optional(),
+    perk_2_icon: z.enum(PERK_ICONS).optional(),
     perk_3_text: z.string().trim().max(80).optional(),
+    perk_3_icon: z.enum(PERK_ICONS).optional(),
     stars_enabled: z.boolean().optional(),
     stars_rate: z.coerce.number().positive().max(10_000).optional(),
     bank_enabled: z.boolean().optional(),
