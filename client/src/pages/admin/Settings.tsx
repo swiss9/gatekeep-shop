@@ -1,9 +1,75 @@
 import { useEffect, useState } from 'react';
-import { api, type StoreSettings } from '../../lib/api';
+import { api, type PerkIcon, type StoreSettings } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
 import { Banner } from '../../components/Banner';
 
 type Draft = Omit<StoreSettings, 'id' | 'updated_at'>;
+
+const PERK_ICON_OPTIONS: PerkIcon[] = [
+  'shipping', 'returns', 'secure', 'download', 'support', 'gift',
+];
+
+function perkIconPreview(icon: PerkIcon): JSX.Element {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.7,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  switch (icon) {
+    case 'shipping':
+      return (
+        <svg {...common}>
+          <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" />
+          <circle cx="7" cy="17.5" r="1.8" />
+          <circle cx="17.5" cy="17.5" r="1.8" />
+        </svg>
+      );
+    case 'returns':
+      return (
+        <svg {...common}>
+          <path d="M4 9a8 8 0 0 1 14.9-2M20 15a8 8 0 0 1-14.9 2" />
+          <path d="M18.5 3.5V7H15M5.5 20.5V17H9" />
+        </svg>
+      );
+    case 'secure':
+      return (
+        <svg {...common}>
+          <path d="M12 3 4.5 6v5c0 4.6 3.2 8.2 7.5 10 4.3-1.8 7.5-5.4 7.5-10V6L12 3z" />
+          <path d="m9 11.5 2.2 2.2L15.5 9" />
+        </svg>
+      );
+    case 'download':
+      return (
+        <svg {...common}>
+          <path d="M12 4v12m0 0-4-4m4 4 4-4" />
+          <path d="M4 18h16" />
+        </svg>
+      );
+    case 'support':
+      return (
+        <svg {...common}>
+          <path d="M4 12a8 8 0 1 1 16 0" />
+          <rect x="3" y="12" width="4" height="7" rx="1.5" />
+          <rect x="17" y="12" width="4" height="7" rx="1.5" />
+          <path d="M17 19v1a3 3 0 0 1-3 3h-2" />
+        </svg>
+      );
+    case 'gift':
+      return (
+        <svg {...common}>
+          <rect x="3" y="9" width="18" height="12" rx="1.5" />
+          <path d="M3 13h18" />
+          <path d="M12 9v12" />
+          <path d="M12 9c-1.5 0-4-1-4-3.5C8 4 9.5 3 11 3c1.5 0 2 1.5 2 3V9h1V6c0-1.5.5-3 2-3 1.5 0 3 1 3 2.5C19 8 16.5 9 15 9" />
+        </svg>
+      );
+  }
+}
 
 export function Settings() {
   const toast = useToast();
@@ -331,20 +397,67 @@ export function Settings() {
             <span className="knob" />
           </label>
         </div>
+        <p className="muted" style={{ fontSize: 11.5, marginBottom: 10 }}>
+          These three bullets appear on every product page. Leave a text field blank to hide that line.
+        </p>
         {draft.perks_enabled && (
           <>
-            <div className="field">
-              <label>Perk 1 (leave blank to hide)</label>
-              <input type="text" value={draft.perk_1_text} onChange={(e) => update('perk_1_text', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>Perk 2 (leave blank to hide)</label>
-              <input type="text" value={draft.perk_2_text} onChange={(e) => update('perk_2_text', e.target.value)} />
-            </div>
-            <div className="field">
-              <label>Perk 3 (leave blank to hide)</label>
-              <input type="text" value={draft.perk_3_text} onChange={(e) => update('perk_3_text', e.target.value)} />
-            </div>
+            {([1, 2, 3] as const).map((n) => {
+              const textKey = `perk_${n}_text` as const;
+              const iconKey = `perk_${n}_icon` as const;
+              return (
+                <div
+                  key={n}
+                  style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 12,
+                    padding: 12,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div className="field" style={{ marginBottom: 8 }}>
+                    <label>Perk {n} text</label>
+                    <input
+                      type="text"
+                      value={draft[textKey]}
+                      onChange={(e) => update(textKey, e.target.value)}
+                      placeholder={n === 1 ? 'Fast delivery' : n === 2 ? '30-day easy returns' : 'Secure checkout'}
+                    />
+                  </div>
+                  <div className="field" style={{ marginBottom: 0 }}>
+                    <label>Icon</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {PERK_ICON_OPTIONS.map((ic) => {
+                        const selected = draft[iconKey] === ic;
+                        return (
+                          <button
+                            key={ic}
+                            type="button"
+                            onClick={() => update(iconKey, ic)}
+                            title={ic}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 10,
+                              border: selected ? '2px solid var(--ink)' : '1px solid var(--line)',
+                              background: 'var(--surface)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--ink)',
+                              padding: 0,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {perkIconPreview(ic)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
         <button
@@ -353,7 +466,12 @@ export function Settings() {
           disabled={saving === 'perks'}
           onClick={() =>
             save(
-              ['perks_enabled', 'perk_1_text', 'perk_2_text', 'perk_3_text'],
+              [
+                'perks_enabled',
+                'perk_1_text', 'perk_1_icon',
+                'perk_2_text', 'perk_2_icon',
+                'perk_3_text', 'perk_3_icon',
+              ],
               'perks',
               'Perks saved',
             )
@@ -449,4 +567,4 @@ export function Settings() {
       </div>
     </>
   );
-    }
+                                      }
