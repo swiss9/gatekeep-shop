@@ -11,10 +11,6 @@ export const OrderItemInputSchema = z.object({
   quantity: z.number().int().min(1).max(99),
 });
 
-export const PAYMENT_METHODS = [
-  'manual', 'cod', 'bank', 'crypto', 'stars', 'stripe',
-] as const;
-
 const NAME_RE = /^[\p{L}][\p{L}\s'.\-]{1,79}$/u;
 const ADDRESS_RE = /^(?=.*[\p{L}])(?=.*\d)[\p{L}\p{N}\s.,'#/\-]{4,239}$/u;
 const CITY_RE = /^[\p{L}][\p{L}\s'\-]{1,79}$/u;
@@ -36,7 +32,7 @@ export const OrderCreateSchema = z.object({
     zip: z.string().trim().max(20).optional().default('')
       .refine((v) => v === '' || ZIP_RE.test(v), 'Enter a valid ZIP / postal code'),
   }),
-  payment_method: z.enum(PAYMENT_METHODS),
+  payment_method: z.enum(['manual', 'cod', 'bank', 'crypto', 'stars', 'stripe']),
 });
 export type OrderCreateInput = z.infer<typeof OrderCreateSchema>;
 
@@ -87,9 +83,6 @@ export const SettingsUpdateSchema = z
     banner_cta: z.string().trim().max(40).optional(),
     banner_cta_action: z.enum(['all', 'category', 'search']).optional(),
     banner_color: z.enum(['mint', 'blue', 'pink', 'yellow', 'neutral']).optional(),
-    payment_provider: z.enum(PAYMENT_METHODS).optional(),
-    payment_url: z.string().max(500).optional(),
-    payment_ton_address: z.string().max(120).optional(),
     perks_enabled: z.boolean().optional(),
     perk_1_text: z.string().trim().max(80).optional(),
     perk_2_text: z.string().trim().max(80).optional(),
