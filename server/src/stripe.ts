@@ -3,14 +3,12 @@ import { env } from './env.js';
 import { HttpError } from './middleware/auth.js';
 
 /**
- * Lazy singleton. The SDK constructor throws if the key is missing, so
- * we defer construction until the first Stripe call. This lets a store
- * that doesn't use Stripe boot without STRIPE_SECRET_KEY.
- *
- * No `apiVersion` is passed — the SDK uses the version it was built
- * against. Pinning by date means every SDK upgrade breaks the build
- * until you bump the string. Let the SDK own it.
+ * Must match the Mini App short name you chose in BotFather /newapp.
+ * Used to build return/cancel URLs so the buyer lands back in Telegram
+ * after payment, not a dead-end browser tab.
  */
+const APP_SHORT_NAME = 'store';
+
 let client: Stripe | null = null;
 
 function getClient(): Stripe {
@@ -27,12 +25,10 @@ function getClient(): Stripe {
   return client;
 }
 
-/** Returns a lazily-constructed client for the webhook handler. */
 export function stripeClient(): Stripe {
   return getClient();
 }
 
-/** True if a signing secret is present. Used by the webhook route. */
 export function stripeWebhookConfigured(): boolean {
   return typeof env.STRIPE_WEBHOOK_SECRET === 'string' && env.STRIPE_WEBHOOK_SECRET.length > 0;
 }
@@ -79,11 +75,11 @@ export async function createStripeCheckoutSession(
   }
 
   const returnUrl = env.TELEGRAM_BOT_USERNAME
-    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}?startapp=paid_${params.orderCode}`
+    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=paid_${params.orderCode}`
     : env.MINI_APP_URL;
 
   const cancelUrl = env.TELEGRAM_BOT_USERNAME
-    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}?startapp=cancelled_${params.orderCode}`
+    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=cancelled_${params.orderCode}`
     : env.MINI_APP_URL;
 
   const session = await stripe.checkout.sessions.create({
