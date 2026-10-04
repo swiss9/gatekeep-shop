@@ -223,7 +223,7 @@ export function Orders() {
           const canConfirm = o.status === 'Pending payment';
           const isBusy = busy === o.id;
 
-          const hasPhysicalItem = orderItems.some((it) => it.product_id !== null);
+          const hasPhysicalItem = orderItems.some((it) => it.delivery_type === 'physical');
           const hasAddressText =
             o.customer_address && o.customer_address !== '—' && hasPhysicalItem;
           const hasCityText =
@@ -276,8 +276,40 @@ export function Orders() {
                 </span>
               </div>
 
-              <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
-                {o.customer_name} · {formatMoney(o.total, currency)} · {methodLabel}
+              {/* Customer name is a link to their Telegram profile when
+                  their username is known. */}
+              <div
+                className="muted"
+                style={{
+                  fontSize: 12,
+                  marginBottom: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexWrap: 'wrap',
+                }}
+              >
+                {o.customer_username ? (
+                  <a
+                    href={`https://t.me/${o.customer_username}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      color: 'var(--ink)',
+                      fontWeight: 600,
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 3,
+                    }}
+                  >
+                    {o.customer_name}
+                  </a>
+                ) : (
+                  <span style={{ fontWeight: 600 }}>{o.customer_name}</span>
+                )}
+                <span>
+                  · {formatMoney(o.total, currency)} · {methodLabel}
+                </span>
               </div>
 
               {isOpen && (
@@ -304,7 +336,6 @@ export function Orders() {
                     ))}
                   </div>
 
-                  {/* Order timeline */}
                   <div
                     style={{
                       border: '1px solid var(--line)',
