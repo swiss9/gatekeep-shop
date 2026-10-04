@@ -121,6 +121,7 @@ export type OrderItem = {
   product_price: number;
   quantity: number;
   pastel_color: string | null;
+  delivery_type: DeliveryType | null;
 };
 
 export type AdminInvite = {
