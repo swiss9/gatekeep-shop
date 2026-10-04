@@ -2,13 +2,6 @@ import Stripe from 'stripe';
 import { env } from './env.js';
 import { HttpError } from './middleware/auth.js';
 
-/**
- * Must match the Mini App short name you chose in BotFather /newapp.
- * Used to build return/cancel URLs so the buyer lands back in Telegram
- * after payment, not a dead-end browser tab.
- */
-const APP_SHORT_NAME = 'store';
-
 let client: Stripe | null = null;
 
 function getClient(): Stripe {
@@ -74,12 +67,16 @@ export async function createStripeCheckoutSession(
     });
   }
 
+  // After Stripe finishes, send the buyer back into Telegram. The
+  // `startapp=paid_<code>` param is picked up by DeepLinkHandler in the
+  // client and routes straight to the order confirmation screen.
+  const shortName = env.TELEGRAM_APP_SHORT_NAME;
   const returnUrl = env.TELEGRAM_BOT_USERNAME
-    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=paid_${params.orderCode}`
+    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}/${shortName}?startapp=paid_${params.orderCode}`
     : env.MINI_APP_URL;
 
   const cancelUrl = env.TELEGRAM_BOT_USERNAME
-    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}/${APP_SHORT_NAME}?startapp=cancelled_${params.orderCode}`
+    ? `https://t.me/${env.TELEGRAM_BOT_USERNAME}/${shortName}?startapp=cancelled_${params.orderCode}`
     : env.MINI_APP_URL;
 
   const session = await stripe.checkout.sessions.create({
