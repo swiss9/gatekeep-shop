@@ -18,10 +18,6 @@ function isFresh(o: Order): boolean {
   return new Date(o.created_at).getTime() > Date.now() - STALE_PENDING_HOURS * 3600_000;
 }
 
-/**
- * Shared post-Paid work: notify buyer, deliver digital files, and if the
- * order has nothing to physically ship, flip status to Delivered.
- */
 async function completePaidOrder(order: {
   id: string;
   order_code: string;
@@ -81,7 +77,29 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       ? await supabaseAdmin.from('order_items').select('*').in('order_id', ids)
       : { data: [] as OrderItem[] };
 
-    const ordersWithSigned: Array<Order & { payment_proof_signed_url: string | null }> = [];
+    // Batch-fetch customer usernames so admins can tap through to their
+    // Telegram profile from the order card.
+    const userIds = [
+      ...new Set(visible.map((o) => o.user_id).filter((x): x is string => !!x)),
+    ];
+    const { data: profiles } = userIds.length
+      ? await supabaseAdmin
+          .from('profiles')
+          .select('id, username')
+          .in('id', userIds)
+      : { data: [] as Array<{ id: string; username: string | null }> };
+    const usernameById = new Map(
+      ((profiles as Array<{ id: string; username: string | null }> | null) ?? [])
+        .map((p) => [p.id, p.username]),
+    );
+
+    const ordersWithSigned: Array<
+      Order & {
+        payment_proof_signed_url: string | null;
+        customer_username: string | null;
+      }
+    > = [];
+
     for (const o of visible) {
       let signed: string | null = null;
       if (o.payment_proof_url) {
@@ -89,10 +107,17 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
           .from('receipts').createSignedUrl(o.payment_proof_url, 60 * 30);
         signed = proxyStorageUrl(data?.signedUrl ?? null);
       }
-      ordersWithSigned.push({ ...o, payment_proof_signed_url: signed });
+      ordersWithSigned.push({
+        ...o,
+        payment_proof_signed_url: signed,
+        customer_username: o.user_id ? usernameById.get(o.user_id) ?? null : null,
+      });
     }
 
-    return reply.send({ orders: ordersWithSigned, items: (items as OrderItem[]) ?? [] });
+    return reply.send({
+      orders: ordersWithSigned,
+      items: (items as OrderItem[]) ?? [],
+    });
   });
 
   app.post('/api/admin/orders/:id/confirm-paid', admin, async (req, reply) => {
