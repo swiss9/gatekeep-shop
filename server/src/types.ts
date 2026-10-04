@@ -10,6 +10,14 @@ export type Profile = {
   created_at: string;
 };
 
+export type PerkIcon =
+  | 'shipping'
+  | 'returns'
+  | 'secure'
+  | 'download'
+  | 'support'
+  | 'gift';
+
 export type StoreSettings = {
   id: 1;
   store_name: string;
@@ -27,8 +35,11 @@ export type StoreSettings = {
   banner_color: 'mint' | 'blue' | 'pink' | 'yellow' | 'neutral';
   perks_enabled: boolean;
   perk_1_text: string;
+  perk_1_icon: PerkIcon;
   perk_2_text: string;
+  perk_2_icon: PerkIcon;
   perk_3_text: string;
+  perk_3_icon: PerkIcon;
   stars_enabled: boolean;
   stars_rate: number;
   bank_enabled: boolean;
