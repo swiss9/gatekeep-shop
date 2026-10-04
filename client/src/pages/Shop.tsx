@@ -14,7 +14,7 @@ type State =
 
 export function Shop() {
   const { navigate } = useRouter();
-  const { items, wishlist, toggleWishlist, count } = useCart();
+  const { items, count } = useCart();
   const toast = useToast();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [activeCat, setActiveCat] = useState<string>('All');
@@ -26,7 +26,12 @@ export function Shop() {
     Promise.all([api.store(), api.categories(), api.products()])
       .then(([store, cats, prods]) => {
         if (cancelled) return;
-        setState({ kind: 'ready', store: store.store, categories: cats.categories, products: prods.products });
+        setState({
+          kind: 'ready',
+          store: store.store,
+          categories: cats.categories,
+          products: prods.products,
+        });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -89,7 +94,10 @@ export function Shop() {
             type="button"
             className="icon-btn"
             aria-label="Cart"
-            onClick={() => { if (items.length > 0) navigate({ name: 'checkout' }); else toast('Your cart is empty'); }}
+            onClick={() => {
+              if (items.length > 0) navigate({ name: 'checkout' });
+              else toast('Your cart is empty');
+            }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 8h12l-1.2 12.2a1.5 1.5 0 0 1-1.5 1.3H8.7a1.5 1.5 0 0 1-1.5-1.3L6 8z" />
@@ -104,13 +112,32 @@ export function Shop() {
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
-          <input id="shop-search" type="text" placeholder="Search products, categories…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input
+            id="shop-search"
+            type="text"
+            placeholder="Search products, categories…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
 
         <div className="pills">
-          <button type="button" className={`pill${activeCat === 'All' ? ' active' : ''}`} onClick={() => setActiveCat('All')}>All</button>
+          <button
+            type="button"
+            className={`pill${activeCat === 'All' ? ' active' : ''}`}
+            onClick={() => setActiveCat('All')}
+          >
+            All
+          </button>
           {categories.map((c) => (
-            <button key={c.id} type="button" className={`pill${activeCat === c.id ? ' active' : ''}`} onClick={() => setActiveCat(c.id)}>{c.name}</button>
+            <button
+              key={c.id}
+              type="button"
+              className={`pill${activeCat === c.id ? ' active' : ''}`}
+              onClick={() => setActiveCat(c.id)}
+            >
+              {c.name}
+            </button>
           ))}
         </div>
       </header>
@@ -120,12 +147,23 @@ export function Shop() {
       <div className="sec-head" ref={gridRef}>
         <span className="section-title">Products</span>
         {(activeCat !== 'All' || query) && (
-          <button type="button" className="link-btn" onClick={() => { setActiveCat('All'); setQuery(''); }}>Clear filters</button>
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => {
+              setActiveCat('All');
+              setQuery('');
+            }}
+          >
+            Clear filters
+          </button>
         )}
       </div>
 
       {productsWithCat.length === 0 ? (
-        <div className="empty"><p>{query ? `No products match “${query}”.` : 'Nothing in this category yet.'}</p></div>
+        <div className="empty">
+          <p>{query ? `No products match “${query}”.` : 'Nothing in this category yet.'}</p>
+        </div>
       ) : (
         <div className="grid">
           {productsWithCat.map((p) => (
@@ -133,12 +171,9 @@ export function Shop() {
               key={p.id}
               product={p}
               currency={currency}
-              saved={wishlist.has(p.id)}
-              onOpen={() => { haptic('light'); navigate({ name: 'product', id: p.id }); }}
-              onToggleSaved={() => {
-                const wasSaved = wishlist.has(p.id);
-                toggleWishlist(p.id);
-                toast(wasSaved ? 'Removed from wishlist' : 'Saved to wishlist');
+              onOpen={() => {
+                haptic('light');
+                navigate({ name: 'product', id: p.id });
               }}
             />
           ))}
