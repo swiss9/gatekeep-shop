@@ -116,7 +116,10 @@ export type Order = {
   created_at: string;
 };
 
-export type OrderWithReceipt = Order & { payment_proof_signed_url: string | null };
+export type OrderWithReceipt = Order & {
+  payment_proof_signed_url: string | null;
+  customer_username: string | null;
+};
 
 export type OrderItem = {
   id: string;
@@ -126,6 +129,7 @@ export type OrderItem = {
   product_price: number;
   quantity: number;
   pastel_color: string | null;
+  delivery_type: DeliveryType | null;
 };
 
 export type OrderDownload = {
