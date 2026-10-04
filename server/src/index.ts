@@ -11,6 +11,7 @@ import { productRoutes } from './routes/products.js';
 import { categoryRoutes } from './routes/categories.js';
 import { orderRoutes } from './routes/orders.js';
 import { uploadRoutes } from './routes/uploads.js';
+import { storageProxyRoutes } from './routes/storageProxy.js';
 import { paymentRoutes } from './routes/payments.js';
 import { adminRoutes } from './routes/admin.js';
 import { teamRoutes } from './routes/team.js';
@@ -21,6 +22,7 @@ async function build(): Promise<FastifyInstance> {
     trustProxy: true,
   });
 
+  // Preserve the raw JSON body for webhook signature verification.
   app.addContentTypeParser(
     'application/json',
     { parseAs: 'buffer' },
@@ -66,6 +68,7 @@ async function build(): Promise<FastifyInstance> {
   await app.register(categoryRoutes);
   await app.register(orderRoutes);
   await app.register(uploadRoutes);
+  await app.register(storageProxyRoutes);
   await app.register(paymentRoutes);
   await app.register(adminRoutes);
   await app.register(teamRoutes);
