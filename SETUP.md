@@ -26,6 +26,11 @@ a credit card.
 
 **Sign in to each with GitHub or email.** Whichever is easier for you.
 
+**Tip:** Keep a notepad open on your phone or computer. You'll collect
+about 10 values along the way — write them down as you go. Every value
+you copy is used later in the guide, and the guide tells you exactly
+where each one came from.
+
 ---
 
 ## Step 1 — Set up Supabase
@@ -40,8 +45,8 @@ customer info, uploaded images.
 3. Click **New project**
 4. Fill in:
    - **Name:** anything (e.g. `gatekeep-shop`)
-   - **Database Password:** click "Generate a password" and **save it
-     somewhere safe**. You probably won't need it, but keep it.
+   - **Database Password:** click "Generate a password" and save it
+     somewhere safe. You probably won't need it again, but keep it.
    - **Region:** pick the one closest to where most of your customers
      live
 5. Click **Create new project**
@@ -78,8 +83,8 @@ These are what connect your shop to your database.
 1. In Supabase, click the **gear icon** at the bottom of the left
    sidebar (Settings)
 2. Click **API** in the settings menu
-3. You'll see these values on the page. Copy each one into a notepad
-   or text file (you'll need them in Step 3):
+3. You'll see these values on the page. Copy each one into your notepad
+   (you'll need them in Step 3):
 
    | Label on this page | What to copy |
    |---|---|
@@ -94,7 +99,8 @@ These are what connect your shop to your database.
 **You now have 4 values from Supabase.** Keep them in your notepad.
 
 ⚠️ **Important:** The `service_role` key and the JWT secret are
-passwords. Never share them publicly, never put them in GitHub.
+passwords. Never share them publicly, never put them in GitHub, never
+paste them into a chat.
 
 ---
 
@@ -112,7 +118,7 @@ store.
    (e.g. `MyShopBot`)
 5. BotFather replies with a message containing your bot **token**. It
    looks like:
-   ```text
+   ```
    1234567890:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
 6. **Copy that token.** Save it in your notepad.
@@ -132,6 +138,14 @@ access, even if you accidentally lock yourself out later.
 Look at BotFather's reply again. Your bot's username (without the `@`)
 goes in your notepad too. Example: if the bot is `@MyShopBot`, you save
 `MyShopBot`.
+
+**You'll need this value in two places:** in Step 3b as a Render
+environment variable, and in Step 4a as a Vercel environment variable.
+Both are required.
+
+Without it on Render, Stripe payments redirect the buyer to a plain
+browser page after payment instead of reopening the Mini App. Without
+it on Vercel, invite links don't build correctly.
 
 **You now have 3 values from Telegram:**
 - Bot token
@@ -186,6 +200,7 @@ Stripe, and Telegram.
    | `TELEGRAM_BOT_TOKEN` | your bot token | Step 2a |
    | `ADMIN_TELEGRAM_ID` | your Telegram user ID | Step 2b |
    | `TELEGRAM_BOT_USERNAME` | your bot username (no @) | Step 2c |
+   | `TELEGRAM_APP_SHORT_NAME` | `store` | Just type `store` (see Step 5a) |
    | `CLIENT_ORIGIN` | `https://placeholder.vercel.app` | Temporary — we'll fix this in Step 4 |
    | `MINI_APP_URL` | `https://placeholder.vercel.app` | Temporary |
    | `PUBLIC_SERVER_URL` | `https://placeholder.onrender.com` | Temporary — we'll fix this in Step 3c |
@@ -201,7 +216,7 @@ Stripe, and Telegram.
 1. After you save the env vars, wait ~1 minute for the service to
    restart.
 2. At the top of the Render page, you'll see a URL like:
-   ```text
+   ```
    https://gatekeep-shop-server.onrender.com
    ```
    (The actual name depends on what you typed in "Name".)
@@ -212,7 +227,7 @@ Stripe, and Telegram.
 
 Render will restart again. You should see a green "Live" status at the
 top and logs saying:
-```text
+```
 Gatekeep Shop server listening on :8080
 [bot] long-polling started
 ```
@@ -240,12 +255,13 @@ Vercel hosts your storefront — the actual page customers see.
 5. **Before clicking Deploy**, expand the **Environment Variables**
    section and add these:
 
-   | Key | Value |
-   |---|---|
-   | `VITE_API_URL` | your Render URL from Step 3c |
-   | `VITE_SUPABASE_URL` | your Supabase Project URL |
-   | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key |
-   | `VITE_BOT_USERNAME` | your bot username (no @) |
+   | Key | Value | Where it came from |
+   |---|---|---|
+   | `VITE_API_URL` | your Render URL | Step 3c |
+   | `VITE_SUPABASE_URL` | your Supabase Project URL | Step 1d |
+   | `VITE_SUPABASE_ANON_KEY` | your Supabase anon key | Step 1d |
+   | `VITE_BOT_USERNAME` | your bot username (no @) | Step 2c |
+   | `VITE_TELEGRAM_APP_SHORT_NAME` | `store` | Same value as server's `TELEGRAM_APP_SHORT_NAME` |
 
    For each one: type the key, type the value, click **Add**.
 
@@ -254,7 +270,7 @@ Vercel hosts your storefront — the actual page customers see.
 ### 4b. Get your Vercel URL
 
 Vercel shows you the deployed URL — something like:
-```text
+```
 https://gatekeep-shop.vercel.app
 ```
 
@@ -278,7 +294,8 @@ Now we go back and replace the placeholders we left in Render.
 
 ## Step 5 — Register the Mini App with Telegram
 
-This step is what makes invite links and direct links work. Don't skip it.
+This step is what makes invite links and Stripe returns work. Don't
+skip it.
 
 ### 5a. Register the app
 
@@ -298,23 +315,20 @@ This step is what makes invite links and direct links work. Don't skip it.
 5. BotFather confirms and gives you your Mini App link, e.g.
    `t.me/YourBotUsername/store`
 
-⚠️ **The short name must be `store`.** The code in this template
-   builds invite links as `t.me/<bot>/store?startapp=inv_...`. If you
-   choose a different short name, invite links will break.
+⚠️ **The short name must be `store`.** The environment variables you
+   already set (`TELEGRAM_APP_SHORT_NAME` on Render and
+   `VITE_TELEGRAM_APP_SHORT_NAME` on Vercel) both say `store`. If you
+   pick a different short name in BotFather, invite links and Stripe
+   returns will break.
 
-   *If you really want a different short name:* after finishing `/newapp`,
-   open `client/src/pages/admin/Team.tsx` and change the line:
-
-   ```ts
-   const APP_SHORT_NAME = 'store';
-   ```
-
-   Set it to whatever short name you chose in BotFather, then redeploy
-   the client.
+   *If you really want a different short name* (e.g. `myshop`), you
+   don't need to edit any code — just change those two env vars to
+   match, and redeploy both Render and Vercel.
 
 ### 5b. Set the menu button
 
-1. Still in BotFather, send `/mybots` → your bot → **Bot Settings** → **Menu Button**
+1. Still in BotFather, send `/mybots` → your bot → **Bot Settings** →
+   **Menu Button**
 2. Set the URL to your Vercel URL
 
 This adds a button in the chat that opens your shop with one tap.
@@ -396,6 +410,12 @@ Test it by buying your own product with card
 payment succeeds, the order will flip to **Paid** automatically and you
 can refund it in Stripe.
 
+**Important:** after the test payment completes, the browser should
+redirect to `t.me/<your-bot>/store?startapp=paid_...` and Telegram
+should reopen the Mini App with your order confirmation. If instead you
+see a plain Vercel URL that says "Open this app from inside Telegram,"
+see Troubleshooting — you're missing an env var.
+
 When you're ready for real payments, switch back to live mode in Stripe
 and replace the two env vars with the live versions.
 
@@ -452,7 +472,7 @@ Everything is done from inside the app. No code changes needed.
 | Free shipping threshold | **Admin → Settings** → Store section |
 | Payment methods | **Admin → Settings** → Payments section |
 | Home banner | **Admin → Settings** → Home banner section |
-| Perks shown on product pages | **Admin → Settings** → Product perks section |
+| Perks shown on product pages (text + icons) | **Admin → Settings** → Product perks section |
 | Categories | **Admin → Categories** |
 | Products (add, edit, delete) | **Admin → Products** |
 | Orders (view, confirm, ship) | **Admin → Orders** |
@@ -482,26 +502,47 @@ no `@`).
 ### "Failed to fetch" / images won't load / downloads don't work
 
 If you're in India, Myanmar, UAE, or a similar region, your ISP may be
-blocking `*.supabase.co`. Enable the storage proxy (see **Optional —
-Fix for blocked regions** above).
+blocking `*.supabase.co`. This template ships with a proxy that solves
+it automatically — just confirm `PUBLIC_SERVER_URL` on Render is set to
+your actual Render URL (see Step 3c).
 
-If your region isn't blocked and you still see this, check that
-`PUBLIC_SERVER_URL` on Render is set to your actual Render URL.
+If you're not in a blocked region and still see this, check the Render
+logs for errors and make sure all env vars from Step 3b are set.
 
 ### CORS error in the browser console
 
 `CLIENT_ORIGIN` on Render doesn't match your Vercel URL exactly. Make
 sure it's the full URL with `https://` and no trailing slash.
 
-### Stripe payment doesn't complete
+### Stripe payment completes but the buyer is stranded in a browser
 
-1. Check Render's logs for errors
-2. In Stripe, go to **Developers → Webhooks → your endpoint** and look
-   at **Recent deliveries**. Every event should have a green 200
-   response.
-3. If they show timeouts, your Render service is sleeping. The free tier
-   sleeps after 15 minutes of inactivity — first request takes ~10
-   seconds to wake it. Stripe retries on its own.
+After a successful Stripe payment, the browser should redirect to
+`t.me/<your-bot>/store?startapp=paid_...` and Telegram should reopen
+the Mini App. If the browser instead shows your Vercel URL with "Open
+this app from inside Telegram," the server is missing one or both of
+these env vars.
+
+Fix: Render → your server → **Environment** → add:
+
+- `TELEGRAM_BOT_USERNAME=YourBotUsername` (no `@`)
+- `TELEGRAM_APP_SHORT_NAME=store`
+
+Save. Render restarts. Next payment returns to Telegram correctly.
+
+### Invite link doesn't promote the person
+
+Two things must be true:
+
+1. **You've completed `/newapp` in BotFather.** Without it, Telegram
+   never passes the `startapp=` parameter to your Mini App, and the
+   server has nothing to redeem. See Step 5.
+
+2. **The short name matches.** Both `TELEGRAM_APP_SHORT_NAME` on Render
+   and `VITE_TELEGRAM_APP_SHORT_NAME` on Vercel must be `store` — or
+   whatever you actually chose in BotFather. Mismatch breaks the link.
+
+Also: links are single-use and expire 48 hours after creation. If a
+link doesn't work, revoke it and create a fresh one.
 
 ### "Permission denied for table X"
 
@@ -512,22 +553,6 @@ the SQL Editor.
 
 Check Render's logs. It'll tell you exactly which variable is missing
 or malformed. Compare against Step 3b.
-
-### Invite link doesn't promote the person
-
-Two things must be true:
-
-1. **You've completed `/newapp` in BotFather.** Without it, Telegram
-   never passes the `startapp=` parameter to your Mini App, and the
-   server has nothing to redeem. See Step 5.
-
-2. **The app short name in BotFather matches the code.** The default
-   is `store`. If you chose a different short name in BotFather, open
-   `client/src/pages/admin/Team.tsx` and update the `APP_SHORT_NAME`
-   constant to match, then redeploy.
-
-Also: links are single-use and expire 48 hours after creation. If a
-link doesn't work, revoke it and create a fresh one.
 
 ### I want to start over
 
@@ -540,6 +565,7 @@ Nothing is permanent except your data.
 ### Something else
 
 Email **swiss9.dev@gmail.com** with:
+
 - What you were trying to do
 - What happened (screenshot if possible)
 - Any error messages from Render's or Vercel's logs
