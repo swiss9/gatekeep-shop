@@ -100,13 +100,14 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
       const actor = currentProfile(req);
       const { id } = req.params as { id: string };
 
+      // Hard delete. Order history is preserved because order_items
       const { error } = await supabaseAdmin
         .from('products')
-        .update({ active: false, updated_at: new Date().toISOString() })
+        .delete()
         .eq('id', id);
       if (error) throw new HttpError(500, error.message);
 
-      console.log(`[admin] product ${id} deactivated by ${actor.id} (${actor.role})`);
+      console.log(`[admin] product ${id} deleted by ${actor.id} (${actor.role})`);
       return reply.send({ ok: true });
     },
   );
