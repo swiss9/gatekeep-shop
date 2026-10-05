@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { api, type Role } from './lib/api';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { ToastProvider } from './context/ToastContext';
@@ -62,12 +63,6 @@ function RouterProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={{ route, navigate, back }}>{children}</Ctx.Provider>;
 }
 
-/**
- * Detects deep-link returns from external payment providers. Stripe
- * redirects the buyer to t.me/<bot>?startapp=paid_<orderCode>, which
- * Telegram passes to initData as start_param. Once auth is ready we
- * route straight to the confirmation screen for that order.
- */
 function DeepLinkHandler() {
   const { navigate } = useRouter();
   const auth = useAuth();
@@ -83,13 +78,79 @@ function DeepLinkHandler() {
     if (!code) return;
 
     navigate({ name: 'confirmation', orderCode: code });
-    // Clear the start_param so a subsequent remount doesn't re-fire.
     if (window.Telegram?.WebApp?.initDataUnsafe) {
       window.Telegram.WebApp.initDataUnsafe.start_param = undefined;
     }
   }, [auth, navigate]);
 
   return null;
+}
+
+/**
+ * Custom event name fired by admin order mutations (confirm, simulate,
+ * status change). Listeners refetch immediately instead of waiting for
+ * the next 60s poll.
+ */
+export const ADMIN_ORDERS_UPDATED_EVENT = 'admin-orders-updated';
+
+/**
+ * Polls admin overview for the count of orders awaiting confirmation.
+ *
+ * - Polls every 60 seconds so external changes (new orders, proofs
+ *   submitted from another device) eventually appear without a manual
+ *   refresh. This is the "cache" — one API call per minute, not per
+ *   render.
+ * - Listens for ADMIN_ORDERS_UPDATED_EVENT and refetches immediately
+ *   when the admin acts (confirm paid, change status, etc.). No waiting
+ *   for the next poll.
+ *
+ * Only fires for admins — customers never hit this endpoint.
+ */
+function useAdminBadge(role: Role | null): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (role !== 'admin' && role !== 'superadmin') {
+      setCount(0);
+      return;
+    }
+
+    let cancelled = false;
+    let intervalId: number | undefined;
+
+    const fetchCount = async () => {
+      try {
+        const data = await api.overview();
+        if (!cancelled) setCount(data.pendingConfirmations);
+      } catch {
+        /* silent */
+      }
+    };
+
+    const startPolling = () => {
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+      intervalId = window.setInterval(fetchCount, 60_000);
+    };
+
+    const onOrdersUpdated = () => {
+      void fetchCount();
+      // Restart the interval so the next scheduled poll is a full minute
+      // after the manual action, not immediately after.
+      startPolling();
+    };
+
+    void fetchCount();
+    startPolling();
+    window.addEventListener(ADMIN_ORDERS_UPDATED_EVENT, onOrdersUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(ADMIN_ORDERS_UPDATED_EVENT, onOrdersUpdated);
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+    };
+  }, [role]);
+
+  return count;
 }
 
 function Screens() {
@@ -114,6 +175,7 @@ function Nav() {
   const { route, navigate } = useRouter();
   const auth = useAuth();
   const role = auth.status === 'ready' ? auth.profile.role : null;
+  const adminBadge = useAdminBadge(role);
 
   const visible = route.name === 'shop' || route.name === 'orders' || route.name === 'admin';
   if (!visible) return null;
@@ -124,6 +186,7 @@ function Nav() {
     <BottomNav
       active={tab}
       role={role}
+      adminBadge={adminBadge}
       onSelect={(next) => {
         if (next === 'shop') navigate({ name: 'shop' });
         else if (next === 'orders') navigate({ name: 'orders' });
