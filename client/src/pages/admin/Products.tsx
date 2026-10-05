@@ -17,7 +17,7 @@ const COLORS: PastelColor[] = ['blue', 'pink', 'yellow', 'mint'];
 const DELIVERY: { id: DeliveryType; label: string }[] = [
   { id: 'physical', label: 'Physical (ships)' },
   { id: 'digital', label: 'Digital (file download)' },
-  { id: 'none', label: 'No service (service / access)' },
+  { id: 'none', label: 'No delivery (service / access)' },
 ];
 
 type FormState = {
@@ -46,21 +46,11 @@ const emptyForm = (): FormState => ({
   digital_file_paths: [],
 });
 
-/**
- * Storage paths are stored as `<8-char-uuid>-<sanitized-filename>.<ext>`.
- * Admins only need to see the original filename, not the uniqueness
- * prefix. This strips it and returns the human-readable tail.
- */
 function displayFilename(storedPath: string): string {
   const tail = storedPath.split('/').pop() ?? storedPath;
-  // Drop the leading `xxxxxxxx-` if present.
   return tail.replace(/^[0-9a-f]{8}-/i, '');
 }
 
-/**
- * Font size adapts to filename length so long names still fit without
- * truncating useful info. Falls back to ellipsis at the far end.
- */
 function filenameFontSize(name: string): number {
   if (name.length <= 24) return 13;
   if (name.length <= 34) return 12;
@@ -220,13 +210,19 @@ export function Products() {
   };
 
   const removeProduct = async (p: Product) => {
-    if (!window.confirm(`Deactivate “${p.name}”?`)) return;
+    const ok = window.confirm(
+      `Permanently delete “${p.name}”?\n\n` +
+        `This removes it from the shop and from the database. ` +
+        `Past orders keep their record of what was bought.\n\n` +
+        `Use the visible toggle instead if you just want to hide it.`,
+    );
+    if (!ok) return;
     try {
       await api.deleteProduct(p.id);
       await load();
-      toast('Deactivated');
+      toast('Product deleted');
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'Failed');
+      toast(err instanceof Error ? err.message : 'Delete failed');
     }
   };
 
@@ -546,4 +542,4 @@ export function Products() {
       )}
     </>
   );
-                  }
+}
