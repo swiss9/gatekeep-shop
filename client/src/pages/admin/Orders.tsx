@@ -9,6 +9,7 @@ import {
   type PaymentMethod,
 } from '../../lib/api';
 import { useToast } from '../../context/ToastContext';
+import { ADMIN_ORDERS_UPDATED_EVENT } from '../../App';
 
 const STATUSES: OrderStatus[] = [
   'Pending payment',
@@ -48,6 +49,11 @@ function formatDateTime(iso: string): string {
     hour: 'numeric',
     minute: '2-digit',
   });
+}
+
+/** Tells the nav badge to refetch immediately. */
+function pingBadge() {
+  window.dispatchEvent(new Event(ADMIN_ORDERS_UPDATED_EVENT));
 }
 
 export function Orders() {
@@ -107,6 +113,7 @@ export function Orders() {
     try {
       await api.updateOrderStatus(order.id, status);
       await load();
+      pingBadge();
       toast(status === 'Delivered' ? 'Delivered · digital goods sent' : 'Status updated');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Update failed');
@@ -118,6 +125,7 @@ export function Orders() {
     try {
       await api.confirmOrderPaid(order.id);
       await load();
+      pingBadge();
       toast('Order marked paid — buyer notified');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Confirm failed');
@@ -136,6 +144,7 @@ export function Orders() {
     try {
       await api.simulateOrderPaid(order.id);
       await load();
+      pingBadge();
       toast('Simulated — buyer notified, order flagged as test');
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Simulate failed');
@@ -236,7 +245,6 @@ export function Orders() {
             !!o.payment_tx_hash ||
             !!o.payment_proof_signed_url;
 
-          // Order needs admin action: pending payment AND proof submitted.
           const isAwaitingConfirm =
             o.status === 'Pending payment' && !!o.payment_proof_submitted_at;
 
@@ -351,10 +359,12 @@ export function Orders() {
                 </span>
               </div>
 
-              {/* Proof hint on the collapsed card so the admin doesn't
-                  miss that there's something to look at. */}
               {isAwaitingConfirm && !isOpen && (
                 <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpanded(o.id);
+                  }}
                   style={{
                     fontSize: 11.5,
                     fontWeight: 600,
@@ -363,6 +373,7 @@ export function Orders() {
                     borderRadius: 8,
                     padding: '6px 10px',
                     marginBottom: 8,
+                    cursor: 'pointer',
                   }}
                 >
                   Proof attached — tap to view
@@ -639,4 +650,4 @@ export function Orders() {
       )}
     </>
   );
-              }
+}
