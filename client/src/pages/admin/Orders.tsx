@@ -236,6 +236,10 @@ export function Orders() {
             !!o.payment_tx_hash ||
             !!o.payment_proof_signed_url;
 
+          // Order needs admin action: pending payment AND proof submitted.
+          const isAwaitingConfirm =
+            o.status === 'Pending payment' && !!o.payment_proof_submitted_at;
+
           const primaryName =
             orderItems.length > 0
               ? orderItems.length > 1
@@ -308,7 +312,7 @@ export function Orders() {
                           : 'blue'
                   }`}
                 >
-                  {o.status}
+                  {isAwaitingConfirm ? 'Awaiting confirmation' : o.status}
                 </span>
               </div>
 
@@ -346,6 +350,24 @@ export function Orders() {
                   · {formatMoney(o.total, currency)} · {methodLabel}
                 </span>
               </div>
+
+              {/* Proof hint on the collapsed card so the admin doesn't
+                  miss that there's something to look at. */}
+              {isAwaitingConfirm && !isOpen && (
+                <div
+                  style={{
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: '#78350F',
+                    background: '#FEF3C7',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    marginBottom: 8,
+                  }}
+                >
+                  Proof attached — tap to view
+                </div>
+              )}
 
               {isOpen && (
                 <>
@@ -426,7 +448,10 @@ export function Orders() {
                   {hasProof && (
                     <div
                       style={{
-                        border: '1px solid var(--line)',
+                        border: isAwaitingConfirm
+                          ? '1.5px solid #F59E0B'
+                          : '1px solid var(--line)',
+                        background: isAwaitingConfirm ? '#FFFBEB' : 'var(--surface)',
                         borderRadius: 10,
                         padding: 12,
                         marginBottom: 12,
@@ -438,7 +463,7 @@ export function Orders() {
                           fontWeight: 800,
                           letterSpacing: '0.08em',
                           textTransform: 'uppercase',
-                          color: 'var(--muted)',
+                          color: isAwaitingConfirm ? '#78350F' : 'var(--muted)',
                           marginBottom: 8,
                         }}
                       >
@@ -448,26 +473,76 @@ export function Orders() {
                       {o.payment_tx_hash && (
                         <div
                           style={{
-                            fontFamily: "'JetBrains Mono', monospace",
-                            fontSize: 11.5,
-                            wordBreak: 'break-all',
-                            marginBottom: 6,
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 8,
+                            marginBottom: 8,
                           }}
                         >
-                          tx: {o.payment_tx_hash}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: 'var(--muted)',
+                                marginBottom: 2,
+                              }}
+                            >
+                              TRANSACTION HASH
+                            </div>
+                            <div
+                              style={{
+                                fontFamily: "'JetBrains Mono', monospace",
+                                fontSize: 11.5,
+                                wordBreak: 'break-all',
+                              }}
+                            >
+                              {o.payment_tx_hash}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="link-btn"
+                            style={{ flex: 'none', marginTop: 12 }}
+                            onClick={() => {
+                              void navigator.clipboard.writeText(
+                                o.payment_tx_hash ?? '',
+                              );
+                              toast('Hash copied');
+                            }}
+                          >
+                            Copy
+                          </button>
                         </div>
                       )}
 
                       {o.payment_proof_note && (
-                        <div className="muted" style={{ fontSize: 12.5, marginBottom: 8 }}>
-                          {o.payment_proof_note}
+                        <div style={{ marginBottom: 8 }}>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              marginBottom: 2,
+                            }}
+                          >
+                            NOTE FROM BUYER
+                          </div>
+                          <div style={{ fontSize: 12.5 }}>{o.payment_proof_note}</div>
                         </div>
                       )}
 
                       {o.payment_proof_signed_url && (
-                        <>
-                          <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                            Receipt image
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              marginBottom: 4,
+                            }}
+                          >
+                            RECEIPT IMAGE
                           </div>
                           <a
                             href={o.payment_proof_signed_url}
@@ -496,7 +571,7 @@ export function Orders() {
                           <p className="muted" style={{ fontSize: 11, marginTop: 6 }}>
                             Tap to open full size · link expires in 30 min
                           </p>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
@@ -564,4 +639,4 @@ export function Orders() {
       )}
     </>
   );
-                      }
+              }
