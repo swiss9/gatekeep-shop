@@ -218,10 +218,29 @@ img{display:block}
 .bnav-btn{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
   padding:11px 0 9px;color:#9CA3AF;font-size:11px;font-weight:600;
-  transition:color .15s;
+  transition:color .15s;position:relative;
 }
 .bnav-btn:hover{color:var(--muted)}
 .bnav-btn.active{color:var(--ink)}
+
+.nav-badge{
+  position:absolute;
+  top:5px;
+  left:calc(50% + 4px);
+  min-width:16px;
+  height:16px;
+  padding:0 4px;
+  background:#DC2626;
+  color:#fff;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'JetBrains Mono',monospace;
+  pointer-events:none;
+}
 
 .page-head{padding:22px 0 4px}
 .page-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;letter-spacing:-0.02em}
@@ -345,4 +364,4 @@ img{display:block}
 .center-state{
   min-height:100dvh;display:flex;align-items:center;justify-content:center;
   padding:24px;text-align:center;color:var(--muted);font-size:14px;
-  }
+}
