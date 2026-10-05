@@ -5,10 +5,11 @@ export type Tab = 'shop' | 'orders' | 'admin';
 type Props = {
   active: Tab;
   role: Role | null;
+  adminBadge?: number;
   onSelect: (tab: Tab) => void;
 };
 
-export function BottomNav({ active, role, onSelect }: Props) {
+export function BottomNav({ active, role, adminBadge = 0, onSelect }: Props) {
   const showAdmin = role === 'admin' || role === 'superadmin';
 
   return (
@@ -50,6 +51,11 @@ export function BottomNav({ active, role, onSelect }: Props) {
             <circle cx="18" cy="17" r="2" />
           </svg>
           <span>Admin</span>
+          {adminBadge > 0 && (
+            <span className="nav-badge">
+              {adminBadge > 99 ? '99+' : adminBadge}
+            </span>
+          )}
         </button>
       )}
     </nav>
