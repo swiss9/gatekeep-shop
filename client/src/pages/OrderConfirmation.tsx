@@ -115,8 +115,6 @@ export function OrderConfirmation({ orderCode }: Props) {
     state.order.status !== 'Cancelled';
   const isCancelled = state.kind === 'ready' && state.order.status === 'Cancelled';
 
-  // Auto-load downloads once paid. Only shown if at least one digital
-  // line item exists — physical-only orders never see the panel.
   useEffect(() => {
     if (!isPaid || state.kind !== 'ready') return;
     if (downloads !== null) return;
@@ -287,8 +285,14 @@ export function OrderConfirmation({ orderCode }: Props) {
 
   return (
     <section className="screen active">
-      <div className="success-wrap" style={{ minHeight: isPaid ? '78dvh' : 'auto', paddingTop: 24 }}>
-        <div className="success-icon" style={isCancelled ? { background: '#FEE2E2' } : undefined}>
+      <div
+        className="success-wrap"
+        style={{ minHeight: isPaid ? '78dvh' : 'auto', paddingTop: 24 }}
+      >
+        <div
+          className="success-icon"
+          style={isCancelled ? { background: '#FEE2E2' } : undefined}
+        >
           {isPaid ? (
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111111" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="m4.5 12.5 5 5L19.5 7" />
@@ -318,7 +322,6 @@ export function OrderConfirmation({ orderCode }: Props) {
         <p className="msg" style={{ maxWidth: 320 }}>{subline}</p>
       </div>
 
-      {/* Downloads panel — only shown for orders that have digital items. */}
       {isPaid && hasDigital && downloads && (
         <div className="panel" style={{ marginTop: 20 }}>
           <span className="section-title" style={{ display: 'block', marginBottom: 10 }}>
@@ -453,10 +456,18 @@ export function OrderConfirmation({ orderCode }: Props) {
             {state.store.bank_details || '—'}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button type="button" className="link-btn" onClick={() => copy(state.store.bank_details, 'Details')}>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => copy(state.store.bank_details, 'Details')}
+            >
               Copy details
             </button>
-            <button type="button" className="link-btn" onClick={() => copy(order.order_code, 'Order code')}>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => copy(order.order_code, 'Order code')}
+            >
               Copy reference
             </button>
           </div>
@@ -568,88 +579,102 @@ export function OrderConfirmation({ orderCode }: Props) {
         </div>
       )}
 
-      {!isPaid && !isCancelled && !proofSubmitted && (method === 'bank' || method === 'crypto') && (
-        <div className="panel" style={{ marginTop: 14 }}>
-          <span className="section-title" style={{ display: 'block', marginBottom: 10 }}>
-            Proof of payment
-          </span>
+      {!isPaid &&
+        !isCancelled &&
+        !proofSubmitted &&
+        (method === 'bank' || method === 'crypto' || method === 'manual') && (
+          <div className="panel" style={{ marginTop: 14 }}>
+            <span className="section-title" style={{ display: 'block', marginBottom: 10 }}>
+              Proof of payment
+            </span>
 
-          {method === 'crypto' && (
-            <div className="field">
-              <label>Transaction hash</label>
-              <input
-                type="text"
-                value={txHash}
-                onChange={(e) => setTxHash(e.target.value)}
-                placeholder="0x… or chain-specific hash"
-              />
-            </div>
-          )}
-
-          <div className="field">
-            <label>Note (optional)</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={method === 'bank' ? 'Sent from XYZ bank, ref #12345' : 'Sent from wallet 0x…'}
-            />
-          </div>
-
-          <div className="field">
-            <label>Receipt image (optional)</label>
-            {!receiptFile ? (
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic"
-                onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
-                disabled={uploading}
-              />
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '10px 12px',
-                  border: '1px solid var(--line)',
-                  borderRadius: 10,
-                  background: 'var(--chip)',
-                }}
-              >
-                <span
-                  className="muted"
-                  style={{
-                    fontSize: 12,
-                    flex: 1,
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {receiptFile.name}
-                </span>
-                <button type="button" className="x-btn" aria-label="Remove file" onClick={clearFile}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M6 6l12 12M18 6 6 18" />
-                  </svg>
-                </button>
+            {method === 'crypto' && (
+              <div className="field">
+                <label>Transaction hash</label>
+                <input
+                  type="text"
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  placeholder="0x… or chain-specific hash"
+                />
               </div>
             )}
+
+            <div className="field">
+              <label>Note (optional)</label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={
+                  method === 'bank'
+                    ? 'Sent from XYZ bank, ref #12345'
+                    : method === 'crypto'
+                      ? 'Sent from wallet 0x…'
+                      : 'Any details you want the seller to know'
+                }
+              />
+            </div>
+
+            <div className="field">
+              <label>Receipt image (optional)</label>
+              {!receiptFile ? (
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  onChange={(e) => setReceiptFile(e.target.files?.[0] ?? null)}
+                  disabled={uploading}
+                />
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 12px',
+                    border: '1px solid var(--line)',
+                    borderRadius: 10,
+                    background: 'var(--chip)',
+                  }}
+                >
+                  <span
+                    className="muted"
+                    style={{
+                      fontSize: 12,
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {receiptFile.name}
+                  </span>
+                  <button
+                    type="button"
+                    className="x-btn"
+                    aria-label="Remove file"
+                    onClick={clearFile}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M6 6l12 12M18 6 6 18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={submitting || uploading}
+              onClick={submitProof}
+            >
+              {uploading ? 'Uploading…' : submitting ? 'Submitting…' : 'Submit proof'}
+            </button>
           </div>
+        )}
 
-          <button
-            type="button"
-            className="btn-primary"
-            disabled={submitting || uploading}
-            onClick={submitProof}
-          >
-            {uploading ? 'Uploading…' : submitting ? 'Submitting…' : 'Submit proof'}
-          </button>
-        </div>
-      )}
-
-      {proofSubmitted && !isPaid && !isCancelled && method !== 'manual' && (
+      {proofSubmitted && !isPaid && !isCancelled && (
         <div className="panel" style={{ marginTop: 14 }}>
           <span className="section-title" style={{ display: 'block', marginBottom: 10 }}>
             Proof submitted
@@ -671,4 +696,4 @@ export function OrderConfirmation({ orderCode }: Props) {
       </button>
     </section>
   );
-}
+                                           }
